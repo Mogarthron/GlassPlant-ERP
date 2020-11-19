@@ -15,7 +15,7 @@ set @vat = 23.0;
 
 --insert into dbo.PrzyjecieZewnetrzne(dataDostawy, id_Kontrachent, nrWZ, informacjeDodatkowe, id_Waluty)
 --values 
---('2020.11.05', @id_Kontrachent, '2140170417', 'Transport Jang', 1)
+--('2020.11.12', @id_Kontrachent, '2140170876', 'Transport Jang', 1)
 
 
 --select * from dbo.Waluty
@@ -25,9 +25,9 @@ set @vat = 23.0;
 
 set @id_PZ = dbo.OstanieIDPrzyjeciaZewnetrznego();
 set @cenaTonyPiasku = 174;
-set @ilePiasku = 23.66;
+set @ilePiasku = 24.08;
 
-select * from dbo.PrzyjecieZewnetrzne where id = @id_PZ
+select * from dbo.PrzyjecieZewnetrzne
 
 --insert into dbo.PrzyjecieZewnetrznePozycje(id_PrzyjecieZewnetrzne, id_Towary, ilosc, cenaZaJednostke, vat, cenaNetto, nazwaPozycji, id_Magazyny)
 --values
@@ -49,5 +49,5 @@ inner join dbo.PrzyjecieZewnetrzne z on z.id = p.id_PrzyjecieZewnetrzne
 where id_Kontrachent = 1
 and id_Magazyny = 1 
 and Year(z.dataDostawy) = 2020 
-and Month(z.dataDostawy) >= 10
+and Month(z.dataDostawy) = 11
 order by z.dataDostawy

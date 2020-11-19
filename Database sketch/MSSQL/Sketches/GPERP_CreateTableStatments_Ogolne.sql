@@ -27,10 +27,10 @@
 --create table KodyTowarowe(
 --	id int primary key identity(1,1) not null,
 --	id_Towary int foreign key references Towary(id) not null,
---	KodZakladowy nvarchar(100), --kod towaru istniej¹cy i dzia³aj¹cy w zak³azie
+--	KodZakladowy nvarchar(100), --kod towaru istniejï¿½cy i dziaï¿½ajï¿½cy w zakï¿½azie
 --	SystematycznyWykazWyrobow nvarchar(8), --xxxx-xxx
---	KodTowarowoMaterialowy nvarchar(25), -- mo¿e wystêpowaæ samodzielnie lub z SSW
---	PolskaKwalifikacjaWyrobowIUs³ug nvarchar(10)
+--	KodTowarowoMaterialowy nvarchar(25), -- moï¿½e wystï¿½powaï¿½ samodzielnie lub z SSW
+--	PolskaKwalifikacjaWyrobowIUslug nvarchar(10)
 --);
 
 --create table Waluty(
@@ -52,7 +52,8 @@
 --	nazwaKrotka nvarchar(30) not null,
 --	akronim nvarchar(6),		
 --	aktywny bit,
---	nip nvarchar(15)
+--	nip nvarchar(15),
+--  bdo nvarchar(20)
 --);
 
 ----create table DaneAdresoweKontrachent(

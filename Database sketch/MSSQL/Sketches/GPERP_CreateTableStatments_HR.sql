@@ -1,7 +1,7 @@
 
 --create table Brygada(
 --	id int primary key identity(1,1) not null,
---	id_Dzialu int foreign key references Dzial(id) not null,
+--	id_JednostkaOrganizacyjna int foreign key references JednostkaOrganizacyjna(id) not null,
 --	nazwa nvarchar(50)
 --);
 
@@ -25,8 +25,8 @@
 --create table NieobecnosciPracownikow(
 --	id int primary key identity(1,1) not null,
 --	id_TypNieobecnosci int foreign key references TypyNieobecnosci(id) not null,
---	nieobecnoscOd datetime2,
---	nieonecnosciDo datetime2,
+--	nieobecnoscOd DATETIME2,
+--	nieonecnosciDo DATETIME2,
 --	doODrobienia bit
 --);
 

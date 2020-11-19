@@ -1,5 +1,5 @@
 --create function OstanieIDPrzyjeciaZewnetrznego()
-----Funkcja zwarcaj¹ca ostanie id dodanego PZ
+----Funkcja zwarcajÄ…ca ostanie id dodanego PZ
 --returns int
 --begin 
 --	declare @MaxID int

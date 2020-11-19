@@ -5,10 +5,12 @@ declare @dataDodania date, @WG int, @WE0 int, @ileWG tinyint, @ileWE0 tinyint
 set @WG = 1
 set @WE0 = 5
 
-set @dataDodania = '2020.11.12'
-set @ileWG = 6
-set @ileWE0 = 6
+set @dataDodania = '2020.11.16'
+set @ileWG = 5
+set @ileWE0 = 8
 
+
+exec dbo.spPrzygotowaneZestawy_DodajZestaw @dataDodania, @WG, @ileWG;
 --insert into dbo.PrzygotowaneZestawy(dataPrzygotowania, id_Receptury, ilosc)
 --values 
 --(@dataDodania, @WG, @ileWG)
