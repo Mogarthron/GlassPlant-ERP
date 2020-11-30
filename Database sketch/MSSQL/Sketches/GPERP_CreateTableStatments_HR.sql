@@ -24,6 +24,7 @@
 
 --create table NieobecnosciPracownikow(
 --	id int primary key identity(1,1) not null,
+--  id_Pracownicy int foreign key references Pracownicy(id) not null,
 --	id_TypNieobecnosci int foreign key references TypyNieobecnosci(id) not null,
 --	nieobecnoscOd DATETIME2,
 --	nieonecnosciDo DATETIME2,
@@ -49,7 +50,7 @@
 
 --create table HarmonogramPracyPracownika(
 --	id int primary key identity(1,1) not null,
---  id_Pracownika foreign key references Pracownicy(id) not null,
+--  id_Pracownika int foreign key references Pracownicy(id) not null,
 --	dataHarmonogramu date not null,
 --	niedziele tinyint,
 --	OCP int foreign key references OrganizacjaCzasuPracy(id),

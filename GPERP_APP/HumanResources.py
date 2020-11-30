@@ -5,6 +5,7 @@ from openpyxl.styles import Font, Color
 import calendar
 import pandas as pd
 from pandas import DataFrame, Series
+# import pyodbc
 
 import os.path
 
@@ -33,6 +34,8 @@ class SheduleModel():
         self.l4 = ['Zwolnienie lekarskie', 'L4']
         self.uw = ['Urlop wypoczynkowy', 'uw']
         self.uo = ['Urlop okolicznościowy', 'uo']
+        self.nn = ['Nieobecność nieusprawiedliwiona', 'nn']
+        self.nu = ['Nieobecność usprawiedliwiona', 'nu']
 
     def SchedulePatern(self, patern):
         '''patern in string like RRRRWPPPPWNNNNWW '''
@@ -79,10 +82,11 @@ class EmployModel():
 
     def __init__(self, employ, dateOfSchedule, Sundays, shiftShedule, firstShift):
 
+        sm = SheduleModel()
         self.Employ = employ,
         self.DateOfSchedule = dateOfSchedule
         self.NumberOfSundays = Sundays
-        self.ShiftShedule = shiftShedule
+        self.ShiftShedule = sm.SchedulePatern(shiftShedule)
         self.FirstShift = firstShift
 
 
@@ -94,66 +98,44 @@ class WorkSchedule():
         self.Department = department
         self.year = year
         self.month = month
+        # self.listOfEmployes = self.__SetListOfEmployes
 
         self.MonthNames = self.__sm.MonthNames
         self.weekDay = self.__sm.weekDay
 
-        self.r = ['Ranek', 'R']
-        self.p = ['Popołudnie', 'P']
-        self.n = ['Nocka', 'N']
-        self.w = ['Wolne', 'W']
-        self.wn = ['Wolna niedziela', 'wn']
-        self.dt = ['Dzień wolny wynikający z grafiku', 'dt']
-        self.l4 = ['Zwolnienie lekarskie', 'L4']
-        self.uw = ['Urlop wypoczynkowy', 'uw']
-        self.uo = ['Urlop okolicznościowy', 'uo']
-
         self.__departmentName = 'Wydział: '
 
-    def SchedulePatern(self, patern):
-        '''patern in string like RRRRWPPPPWNNNNWW '''
+    def __SetListOfEmployes(self):
 
-        _schedulePatern = list()
+        dateOfSchedule = date(self.year, self.month, 1)
 
-        for i in patern:
-            if(i == 'R'):
-                _schedulePatern.append(self.r)
-            elif (i == 'P'):
-                _schedulePatern.append(self.p)
-            elif (i == 'N'):
-                _schedulePatern.append(self.n)
-            elif (i == 'W'):
-                _schedulePatern.append(self.w)
+        fourShiftShedule = 'RRRRWPPPPWNNNNWW'
+        oneShiftShedule = 'RRRRRWW'
 
-        return _schedulePatern
+        listOfEmployes = list()
 
-    def WeekDay(self, data):
-        r = list()
-        r.append(data)
-        r.append(self.weekDay[data.weekday()])
-        return r
+        listOfEmployes.append(EmployModel(
+            'Sokołowski Andrzej', dateOfSchedule, 2, fourShiftShedule, 2))
+        listOfEmployes.append(EmployModel(
+            'Perkowski Leszek', dateOfSchedule, 0, fourShiftShedule, 13))
+        listOfEmployes.append(EmployModel(
+            'Janiak Tomasz', dateOfSchedule, 0, fourShiftShedule, 10))
+        listOfEmployes.append(EmployModel(
+            'Szewczul Bogusław', dateOfSchedule, 1, fourShiftShedule, 6))
+        listOfEmployes.append(EmployModel(
+            'Łoś Emil', dateOfSchedule, 0, oneShiftShedule, 6))
+        listOfEmployes.append(EmployModel(
+            'Połunin Artur', dateOfSchedule, 0, oneShiftShedule, 6))
+        listOfEmployes.append(EmployModel(
+            'Katushonak Ruslan', dateOfSchedule, 0, oneShiftShedule, 6))
 
-    def MonthDay(self, year, month):
+        return listOfEmployes
 
-        data = date(year, month, 1)
+    def SetShiftsDiuringMonth(self, schedulePatern, startShift):
 
-        monthDay = list()
-
-        if (data.month == 12):
-            while (data.year < year + 1):
-                monthDay.append(self.WeekDay(data))
-                data = data + datetime.timedelta(days=1)
-        else:
-            while (data.month < month + 1):
-                monthDay.append(self.WeekDay(data))
-                data = data + datetime.timedelta(days=1)
-
-        return monthDay
-
-    def SetShiftsDiuringMonth(self, schedulePatern, startShift, typ_nazwy=1):
         shift = list()
 
-        for __d in self.MonthDay(self.year, self.month):
+        for __d in self.__sm.MonthDay(self.year, self.month):
 
             shift.append(schedulePatern[startShift])
 
@@ -161,45 +143,29 @@ class WorkSchedule():
             if (len(schedulePatern) - 1 < startShift):
                 startShift = 0
 
-        return [x[typ_nazwy] for x in shift]
+        return [x[1] for x in shift]
 
     def CreateSchedule(self):
 
-        czteroBrygadowka = self.SchedulePatern('RRRRRWW')
+        sh = DataFrame()
 
-        col = ['Sokołowski Andrzej', 'Perkowski Leszek',
-               'Janiak Tomasz', 'Szewczul Bogusław']
+        sh['Dzień mc'] = [x[0]
+                          for x in self.__sm.MonthDay(self.year, self.month)]
+        sh['Dzień tyg'] = [x[1]
+                           for x in self.__sm.MonthDay(self.year, self.month)]
 
-        __fourshiftShedule = 'RRRRWPPPPWNNNNWW'
-        __oneshiftShedule = 'RRRRRWW'
+        ###########################33BEZ SENSU !!!!!!!!!!!!!!!!!!!!!!######
+        i = 0
 
-        dateOfShedule = date(self.year, self.month, 1)
-        listOfEmployes = [
-            EmployModel(col[0], dateOfShedule, 0, __fourshiftShedule, 2),
-            EmployModel(col[1], dateOfShedule, 0, __fourshiftShedule, 10),
-            EmployModel(col[2], dateOfShedule, 0, __fourshiftShedule, 14),
-            EmployModel(col[3], dateOfShedule, 0, __fourshiftShedule, 6)]
-
-        df = DataFrame()
-
-        df['Dzień mc'] = [x[0] for x in self.MonthDay(self.year, self.month)]
-        df['Dzień tyg'] = [x[1] for x in self.MonthDay(self.year, self.month)]
-
-        df[col[0]] = self.SetShiftsDiuringMonth(
-            czteroBrygadowka, 6)
-
-        df[col[1]] = self.SetShiftsDiuringMonth(
-            czteroBrygadowka, 6)
-
-        df[col[2]] = self.SetShiftsDiuringMonth(
-            czteroBrygadowka, 6)
-
-        df[col[3]] = self.SetShiftsDiuringMonth(
-            czteroBrygadowka, 6)
+        for __e in self.__SetListOfEmployes():
+            sh[self.__SetListOfEmployes()[i].Employ[0]] = self.SetShiftsDiuringMonth(
+                self.__SetListOfEmployes()[i].ShiftShedule, self.__SetListOfEmployes()[i].FirstShift)
+            i = i + 1
+        ###########################################################################
 
         print('creating Schedule...')
-        print(df.to_string(index=False))
-        # df.to_excel('Harmonogram_Pracy.xlsx', index=None)
+        print(sh.to_string(index=False))
+        # sh.to_excel('./Harmonogram_Pracy.xlsx', index=None)
         print('Schedule printed')
 
 
@@ -349,6 +315,8 @@ class WorkCard():
 ##########################################################################################################
 ##########################################################################################################
 
+year = 2020
+month = 11
 
-ws = WorkSchedule('DT', 2020, 11)
+ws = WorkSchedule('Dział Technologiczny', year, month)
 ws.CreateSchedule()

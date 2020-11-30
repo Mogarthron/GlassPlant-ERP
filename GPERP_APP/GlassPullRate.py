@@ -2,7 +2,7 @@ from datetime import date
 from pandas import DataFrame, read_excel
 
 
-class PullRateRow:
+class PullRateModel:
     '''Add pullrate of glass from gas and electric hitting furance'''
 
     def __init__(self, date):

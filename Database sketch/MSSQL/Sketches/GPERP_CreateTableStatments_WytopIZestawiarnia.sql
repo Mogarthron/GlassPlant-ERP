@@ -76,7 +76,7 @@ CREATE TABLE RaportTopiarza
     dataGodzina DATETIME2 NOT NULL,
     zasypWE NVARCHAR(4),
     poziomWE NVARCHAR(4),
-    moc NVARCHAR(4),
+    moc NVARCHAR(5),
     baniakWE bit,
     zasypWG NVARCHAR(4),
     poziomWG NVARCHAR(4),
@@ -84,7 +84,7 @@ CREATE TABLE RaportTopiarza
     baniakWG bit
 );
 
-CREATE TABLE TypPrzestoju
+CREATE TABLE TypPrzestojuProdukcji
 (
     id INT PRIMARY KEY IDENTITY(1,1) NOT NULL,
     nazwa NVARCHAR(25) NOT NULL,
@@ -97,7 +97,7 @@ CREATE TABLE TypPrzestoju
 CREATE TABLE PrzestojeProdukcji
 (
     id INT PRIMARY KEY IDENTITY(1,1) NOT NULL,
-    id_TypPrzestoju INT FOREIGN KEY REFERENCES TypPrzestoju(id),
+    id_TypPrzestoju INT FOREIGN KEY REFERENCES TypPrzestojuProdukcji(id),
     przestojOd DATETIME2,
     przestojDo DATETIME2
 );

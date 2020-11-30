@@ -97,7 +97,8 @@ create table Pracownicy
     nazwisko nvarchar(50) not null,
     pierwszeImie nvarchar(50) not null,
     drugieImie nvarchar(50),
-    zatrudniony bit DEFAULT 1
+    zatrudniony bit DEFAULT 1,
+    dataUrodzenia date
 );
 
 create table DaneAdresowePracownika
@@ -127,7 +128,6 @@ create table DanePoufnePracownika
 (
     id int primary key identity(1,1) not null,
     id_Pracownicy int foreign key references Pracownicy(id),
-    dataUrodzenie date,
     nrPesel nvarchar(11),
     seriaDowoduOsobostego nvarchar(3),
     numerDowoduOsobistego nvarchar(6),

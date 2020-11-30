@@ -1,4 +1,4 @@
-from ClassLib import PullRateRow
+from GlassPullRate import PullRateModel
 from datetime import date
 import pandas as pd
 
@@ -30,7 +30,7 @@ class BussinessLogic:
         we3 = self.AddWEBatches('3')
         sumOfWGBatches = int(input('Ilość baniaków WG: '))
 
-        spr = PullRateRow(_date)
+        spr = PullRateModel(_date)
 
         spr.AddShiftPullRateViaBatches(we1, we2, we3, sumOfWGBatches, 471, 420)
 
@@ -61,7 +61,7 @@ class BussinessLogic:
 
     def AddRowToPullRateTable(self, date, ListOfWEBatches, SumOfWGBatches):
 
-        spr = PullRateRow(date)
+        spr = PullRateModel(date)
 
         spr.AddShiftPullRateViaBatches(
             ListOfWEBatches[0], ListOfWEBatches[1], ListOfWEBatches[2], SumOfWGBatches, 471, 420)
