@@ -5,7 +5,8 @@ from openpyxl.styles import Font, Color
 import calendar
 import pandas as pd
 from pandas import DataFrame, Series
-# import pyodbc
+from DBConnection import DBConnection
+
 
 import os.path
 
@@ -80,11 +81,11 @@ class SheduleModel():
 
 class EmployModel():
 
-    def __init__(self, employ, dateOfSchedule, Sundays, shiftShedule, firstShift):
+    def __init__(self, employ, Sundays, shiftShedule, firstShift):
 
         sm = SheduleModel()
         self.Employ = employ,
-        self.DateOfSchedule = dateOfSchedule
+        # self.DateOfSchedule = dateOfSchedule
         self.NumberOfSundays = Sundays
         self.ShiftShedule = sm.SchedulePatern(shiftShedule)
         self.FirstShift = firstShift
@@ -107,27 +108,10 @@ class WorkSchedule():
 
     def __SetListOfEmployes(self):
 
-        dateOfSchedule = date(self.year, self.month, 1)
-
-        fourShiftShedule = 'RRRRWPPPPWNNNNWW'
-        oneShiftShedule = 'RRRRRWW'
-
-        listOfEmployes = list()
-
-        listOfEmployes.append(EmployModel(
-            'Sokołowski Andrzej', dateOfSchedule, 2, fourShiftShedule, 2))
-        listOfEmployes.append(EmployModel(
-            'Perkowski Leszek', dateOfSchedule, 0, fourShiftShedule, 13))
-        listOfEmployes.append(EmployModel(
-            'Janiak Tomasz', dateOfSchedule, 0, fourShiftShedule, 10))
-        listOfEmployes.append(EmployModel(
-            'Szewczul Bogusław', dateOfSchedule, 1, fourShiftShedule, 6))
-        listOfEmployes.append(EmployModel(
-            'Łoś Emil', dateOfSchedule, 0, oneShiftShedule, 6))
-        listOfEmployes.append(EmployModel(
-            'Połunin Artur', dateOfSchedule, 0, oneShiftShedule, 6))
-        listOfEmployes.append(EmployModel(
-            'Katushonak Ruslan', dateOfSchedule, 0, oneShiftShedule, 6))
+        parms = [self.year, self.month]
+        query = 'exec [GPERP].[dbo].[spPokazHarmonogram_HarmonogramPracyPracownika] ? , ?'
+        dbcon = DBConnection()
+        listOfEmployes = dbcon.ShowQuerry(query, parms)
 
         return listOfEmployes
 
@@ -154,18 +138,16 @@ class WorkSchedule():
         sh['Dzień tyg'] = [x[1]
                            for x in self.__sm.MonthDay(self.year, self.month)]
 
-        ###########################33BEZ SENSU !!!!!!!!!!!!!!!!!!!!!!######
-        i = 0
+        __e = self.__SetListOfEmployes()
 
-        for __e in self.__SetListOfEmployes():
-            sh[self.__SetListOfEmployes()[i].Employ[0]] = self.SetShiftsDiuringMonth(
-                self.__SetListOfEmployes()[i].ShiftShedule, self.__SetListOfEmployes()[i].FirstShift)
-            i = i + 1
-        ###########################################################################
+        for i in __e.index:
+            # print(__e['Pracownik'][i], __e['przebiegZmian'][i])
+            sh[__e['Pracownik'][i]] = self.SetShiftsDiuringMonth(
+                self.__sm.SchedulePatern(__e['przebiegZmian'][i]), __e['poczatkowaZmiana'][i])
 
         print('creating Schedule...')
         print(sh.to_string(index=False))
-        # sh.to_excel('./Harmonogram_Pracy.xlsx', index=None)
+        # # sh.to_excel('./Harmonogram_Pracy.xlsx', index=None)
         print('Schedule printed')
 
 
