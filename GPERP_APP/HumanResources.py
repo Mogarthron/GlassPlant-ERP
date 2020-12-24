@@ -1,22 +1,15 @@
 import datetime
 from datetime import date
 from openpyxl import Workbook, load_workbook
-from openpyxl.styles import Font, Color
+from openpyxl.styles import Font, Color, PatternFill
 import calendar
 import pandas as pd
 from pandas import DataFrame, Series
 from DBConnection import DBConnection
-
-
 import os.path
 
-if os.path.isfile('Karta1.xlsx'):
-    os.remove('Karta1.xlsx')
-# if os.path.isfile('Harmonogram_Template.xlsx'):
-#     os.remove('Harmonogram_Template.xlsx')
 
-
-class SheduleModel():
+class ScheduleModel():
 
     def __init__(self):
 
@@ -34,6 +27,7 @@ class SheduleModel():
         self.r8 = ['Ranek od 8:00', '8']
         self.wn = ['Wolna niedziela', 'wn']
         self.dt = ['Dzień wolny wynikający z grafiku', 'dt']
+        self.h = ['Święta i dni wolne od pracy', 'h']
         self.l4 = ['Zwolnienie lekarskie', 'L4']
         self.uw = ['Urlop wypoczynkowy', 'uw']
         self.uo = ['Urlop okolicznościowy', 'uo']
@@ -85,20 +79,35 @@ class SheduleModel():
 
         return monthDay
 
+    def SetShiftsDiuringMonth(self, year, month, schedulePatern, startShift):
+
+        shift = list()
+
+        for __d in self.MonthDay(year, month):
+
+            shift.append(schedulePatern[startShift])
+
+            startShift = startShift + 1
+            if (len(schedulePatern) - 1 < startShift):
+                startShift = 0
+
+        # return [x[1] for x in shift]
+        return shift
+
 
 class WorkSchedule():
 
     def __init__(self, department, year, month):
         '''year and month mast by int type'''
 
-        self.__sm = SheduleModel()
+        self.__sm = ScheduleModel()
 
         self.Department = department
         self.year = year
         self.month = month
 
-        self.MonthNames = self.__sm.MonthNames
-        self.weekDay = self.__sm.weekDay
+        # self.MonthNames = self.__sm.MonthNames
+        # self.weekDay = self.__sm.weekDay
 
         self.__departmentName = 'Wydział: '
 
@@ -150,11 +159,12 @@ class WorkSchedule():
         sheduleName = self.Department + '_' + \
             str(self.year) + '_' + str(self.month) + '.xlsx'
 
-        print(df)
-        df.to_excel(sheduleName)
+        return df
+        # print(df)
+        # df.to_excel(sheduleName)
 
-        if os.path.isfile('Harmonogram_Template.xlsx'):
-            os.remove('Harmonogram_Template.xlsx')
+        # if os.path.isfile('Harmonogram_Template.xlsx'):
+        #     os.remove('Harmonogram_Template.xlsx')
 
 
 class WorkCard():
@@ -165,15 +175,19 @@ class WorkCard():
         self.year = year
         self.month = month
 
-        self.sm = SheduleModel()
+        self.sm = ScheduleModel()
         self.__departmentName = 'Wydział: '
 
-    def PrintWorkCardToExcell(self, Employ, workSchedule):
+    # def WorkCardTemplate(self):
 
-        Position = 'Kierownik działu technologicznego'
-        Salary = 'xxxxx'
-        TypeOfWork = 'czas pracy'
-        SplitingOfOpalGlass = ''
+    def SetWorkSchedule(self, schedulePatern, stratShift, noneWorkingDays):
+
+        sp = self.sm.SchedulePatern(schedulePatern)
+
+        return self.sm.SetShiftsDiuringMonth(
+            self.year, self.month, sp, stratShift)
+
+    def PrintWorkCardToExcell(self, Employ, workSchedule, Holidays):
 
         wb = load_workbook(filename='./Resources/Templates/Karta_pracy.xlsx')
         sheet = wb.active
@@ -187,14 +201,31 @@ class WorkCard():
 
         colNum = 4
 
+        workTime = 0
+        nightWork = 0
+        vacationLeave = 0  # Urlop wypoczynkowy
+
         for d in range(calendar.monthrange(self.year, self.month)[1]):
 
-            sheet.cell(row=5, column=colNum, value=d + 1)
-            # if (date(year, month, d+1).weekday == 6):
-            #     CellFontColor = Font(color='00FFFFFF')
-            #     CellFillColor = Color('00808080')
-            #     sheet.cell(row=5, column=colNum, value=d + 1).font = CellFontColor
-            #     sheet.cell(row=5, column=colNum, value=d + 1).fill = CellFillColor
+            for i in Holidays:
+                if (date(self.year, self.month, d+1) == i):
+                    CellFontColor = Font(
+                        color='00FFFFFF', name='Calibri', size=11)
+                    CellFillColor = PatternFill("solid", fgColor='00808080')
+                    c = sheet.cell(row=5, column=colNum, value=d + 1)
+                    c.font = CellFontColor
+                    c.fill = CellFillColor
+                else:
+                    sheet.cell(row=5, column=colNum, value=d + 1)
+
+            if (date(self.year, self.month, d+1).weekday() == 6):
+                CellFontColor = Font(color='00FFFFFF', name='Calibri', size=11)
+                CellFillColor = PatternFill("solid", fgColor='00808080')
+                c = sheet.cell(row=5, column=colNum, value=d + 1)
+                c.font = CellFontColor
+                c.fill = CellFillColor
+            else:
+                sheet.cell(row=5, column=colNum, value=d + 1)
 
             # Ranki
             if (workSchedule[d] == self.sm.r):
@@ -202,12 +233,14 @@ class WorkCard():
                 sheet.cell(row=7, column=colNum, value=14)
                 sheet.cell(row=8, column=colNum, value=8)
                 sheet.cell(row=23, column=colNum, value=8)
+                workTime = workTime + 8
             # Popołudnia
             elif (workSchedule[d] == self.sm.p):
                 sheet.cell(row=6, column=colNum, value=14)
                 sheet.cell(row=7, column=colNum, value=22)
                 sheet.cell(row=8, column=colNum, value=8)
                 sheet.cell(row=23, column=colNum, value=8)
+                workTime = workTime + 8
             # Nocki
             elif (workSchedule[d] == self.sm.n):
                 sheet.cell(row=6, column=colNum, value=22)
@@ -215,18 +248,22 @@ class WorkCard():
                 sheet.cell(row=8, column=colNum, value=8)
                 sheet.cell(row=12, column=colNum, value=8)
                 sheet.cell(row=23, column=colNum, value=8)
+                workTime = workTime + 8
+                nightWork = nightWork + 8
             # Ranki Od 7:00
             elif (workSchedule[d] == self.sm.r7):
                 sheet.cell(row=6, column=colNum, value=7)
                 sheet.cell(row=7, column=colNum, value=15)
                 sheet.cell(row=8, column=colNum, value=8)
                 sheet.cell(row=23, column=colNum, value=8)
+                workTime = workTime + 8
             # Ranki Od 8:00
             elif (workSchedule[d] == self.sm.r8):
                 sheet.cell(row=6, column=colNum, value=8)
                 sheet.cell(row=7, column=colNum, value=16)
                 sheet.cell(row=8, column=colNum, value=8)
                 sheet.cell(row=23, column=colNum, value=8)
+                workTime = workTime + 8
             # Wolne i wolne wynikające z grafiku
             elif (workSchedule[d] == self.sm.w or workSchedule[d] == self.sm.dt):
                 sheet.cell(row=6, column=colNum, value='')
@@ -234,48 +271,52 @@ class WorkCard():
             elif (workSchedule[d] == self.sm.uw):
                 sheet.cell(row=13, column=colNum, value=8)
                 sheet.cell(row=23, column=colNum, value=8)
+                vacationLeave = vacationLeave + 8
             # Urlop okolicznościowy
             elif (workSchedule[d] == self.sm.uo):
                 sheet.cell(row=17, column=colNum, value=8)
                 sheet.cell(row=23, column=colNum, value=8)
-            # Zwolnienie LEkarskie
+            # Zwolnienie Lekarskie
             elif (workSchedule[d] == self.sm.l4):
                 sheet.cell(row=18, column=colNum, value=8)
                 sheet.cell(row=23, column=colNum, value=8)
 
             colNum = colNum + 1
 
-        sheet['A8'] = TypeOfWork
-        sheet['A9'] = SplitingOfOpalGlass
-        sheet['AI8'] = '=Sum(D8:AH8)'
-        sheet['AI12'] = '=Sum(D12:AH12)'
+        #######################################################################
+
+        # print('Pracownik:', Employ[0])
+        # print('Czas pracy:', workTime)
+        # print('Czas pracy w godzinach nocnych:', nightWork)
+        # print('Urlop wypoczynkowy:', vacationLeave)
+
+        if (Employ[1] == 'Topiarz'):
+            sheet['A8'] = 'Topienie szkła'
+            sheet['A9'] = 'Wylewanie szkła opalowego'
+        else:
+            sheet['A8'] = 'Czas przepracowany'
+
+        sheet['AI8'] = workTime
+
+        if (nightWork != 0):
+            sheet['AI12'] = nightWork
+
+        if (vacationLeave != 0):
+            sheet['AI13'] = vacationLeave
+
+        sheet['AI23'] = workTime + vacationLeave
+
+        #########################################################################
+
+        wk_name = './Resources/Output/' + Employ[0] + '.xlsx'
+
+        if os.path.isfile(wk_name):
+            os.remove(wk_name)
 
         print('Printing...')
-        wb.save('Karta1.xlsx')
+        wb.save(wk_name)
         print('Work card printed')
 
 
 ##########################################################################################################
 ##########################################################################################################
-
-year = 2020
-month = 11
-dep = 'Dział Technologiczny'
-emp = ['Wit Łuczyński', 'Kierownik działu technologicznego', 'xxxxx mc']
-
-sm = SheduleModel()
-
-wsPatern = [sm.w,
-            sm.r7, sm.r7, sm.r7, sm.r7, sm.r7, sm.w, sm.w,
-            sm.r7, sm.dt, sm.uw, sm.uw, sm.uw, sm.w, sm.w,
-            sm.r7, sm.r7, sm.r7, sm.r7, sm.r7, sm.w, sm.w,
-            sm.l4, sm.l4, sm.l4, sm.l4, sm.l4, sm.l4, sm.l4,
-            sm.r7]
-
-# ws = WorkSchedule(dep, year, month)
-# ws.CreateSchedule()
-# ws.ReadShedule()
-
-wk = WorkCard(dep, year, month)
-
-wk.PrintWorkCardToExcell(emp, wsPatern)

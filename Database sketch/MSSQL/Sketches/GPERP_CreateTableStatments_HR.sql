@@ -9,34 +9,60 @@
 -- (
 --     id int primary key identity(1,1) not null,
 --     id_Brygada int foreign key references Brygada(id) not null,
---     id_Pracownicy int FOREIGN KEY REFERENCES Pracownicy(id) NOT NULL
+--     id_Pracownicy int FOREIGN KEY REFERENCES Pracownicy(id) NOT NULL,
+--     naBrygadzieOd Date not null,
+--     naBrygadzieDo Date
 -- );
 
---create table TypyUmowy();
+create table Stanowisko
+(
+    id INT PRIMARY KEY IDENTITY(1,1),
+    nazwaStanowiska NVARCHAR(150),
+    typStanowiska NVARCHAR(100),
+    uszeregowanieStanowiska NVARCHAR(100)
+);
 
---create table Stonowisko();
+CREATE TABLE RodzajUmowy
+(
+    id INT PRIMARY KEY IDENTITY(1,1),
+    nazwa NVARCHAR(50),
+    skrot NVARCHAR(10)
 
---create table Etaty();
+);
 
---create table PremiaUznaniowa();
+create table Etaty
+(
+    id INT PRIMARY KEY IDENTITY(1,1),
+    id_Stanowisko INT FOREIGN KEY REFERENCES Stanowisko(id),
+    id_Pracownicy int FOREIGN KEY REFERENCES Pracownicy(id),
+    dataObjeciaEtatu date,
+    id_RodzajUmowy INT FOREIGN KEY REFERENCES RodzajUmowy(id),
+    aktualne bit
+);
 
--- CREATE TABLE DniWolneOdPracyTypy
--- (
---     --Dni wolne w grafiku
---     id INT PRIMARY KEY IDENTITY(1,1) NOT NULL,
---     nawza NVARCHAR(50) NOT NULL,
---     skrot NVARCHAR(5),
---     opis NVARCHAR(150)
--- );
+CREATE TABLE EtatyStawki
+(
+    id INT PRIMARY KEY IDENTITY(1,1),
+    id_Etaty INT FOREIGN KEY REFERENCES Etaty(id),
+    stawka DECIMAL(7,2),
+    godzinowa bit,
+    dataAktualizacji date,
+    aktualna bit
+);
 
--- CREATE TABLE DniWolneWHarmonogramie
--- (
---     id INT PRIMARY KEY IDENTITY(1,1) NOT NULL,
---     id_DniWolneOdPracy INT FOREIGN KEY REFERENCES DniWolneOdPracyTypy(id) NOT NULL,
---     id_Brygady INT FOREIGN KEY REFERENCES Brygada(id),
---     id_Pracownicy INT FOREIGN KEY REFERENCES Pracownicy(id),
---     data DATE NOT NULL
--- );
+create table PremiaUznaniowa
+(
+    id INT PRIMARY KEY IDENTITY(1,1),
+    id_Pracownicy int FOREIGN KEY REFERENCES Pracownicy(id),
+    rok SMALLINT,
+    miesiac TINYINT,
+    opis NVARCHAR(150),
+    kwota SMALLINT
+);
+
+
+
+
 
 -- CREATE TABLE TypyNieobecnosci
 -- (
