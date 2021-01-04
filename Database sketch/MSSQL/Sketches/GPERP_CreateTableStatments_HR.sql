@@ -60,8 +60,26 @@ create table PremiaUznaniowa
     kwota SMALLINT
 );
 
+CREATE TABLE CzasPracyWMiesiacu
+(
+    data DATE UNIQUE,
+    czasPracyjacy TINYINT
+);
 
+CREATE TABLE DniWolneOdPracyISwieta
+(
+    data DATE UNIQUE,
+    opis NVARCHAR(100)
+);
 
+CREATE TABLE DniWolneWynikajaceZHarmonogramu
+(
+    id INT PRIMARY KEY IDENTITY(1,1),
+    id_Pracownicy int FOREIGN KEY REFERENCES Pracownicy(id),
+    id_Brygada int foreign key references Brygada(id),
+    id_TypyNieobecnosci int foreign key references TypyNieobecnosci(id),
+    data DATE
+);
 
 
 -- CREATE TABLE TypyNieobecnosci
