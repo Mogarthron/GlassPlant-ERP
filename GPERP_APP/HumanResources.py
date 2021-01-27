@@ -29,6 +29,7 @@ class ScheduleModel():
         self.dt = ['Dzień wolny wynikający z grafiku', 'dt']
         self.h = ['Święta i dni wolne od pracy', 'h']
         self.l4 = ['Zwolnienie lekarskie', 'L4']
+        self.kw = ['Kwarantanna', 'kw']
         self.uw = ['Urlop wypoczynkowy', 'uw']
         self.uo = ['Urlop okolicznościowy', 'uo']
         self.ub = ['Urlop bezpłatny', 'ub']
@@ -156,8 +157,8 @@ class WorkSchedule():
 
         df = pd.read_excel('Harmonogram_Template.xlsx', engine='openpyxl')
 
-        sheduleName = self.Department + '_' + \
-            str(self.year) + '_' + str(self.month) + '.xlsx'
+        # sheduleName = self.Department + '_' + \
+        #     str(self.year) + '_' + str(self.month) + '.xlsx'
 
         return df
         # print(df)
@@ -178,14 +179,16 @@ class WorkCard():
         self.sm = ScheduleModel()
         self.__departmentName = 'Wydział: '
 
+        self.db = DBConnection()
+
     # def WorkCardTemplate(self):
 
-    def SetWorkSchedule(self, schedulePatern, stratShift, noneWorkingDays):
+    # def SetWorkSchedule(self, schedulePatern, stratShift, noneWorkingDays):
 
-        sp = self.sm.SchedulePatern(schedulePatern)
+    #     sp = self.sm.SchedulePatern(schedulePatern)
 
-        return self.sm.SetShiftsDiuringMonth(
-            self.year, self.month, sp, stratShift)
+    #     return self.sm.SetShiftsDiuringMonth(
+    #         self.year, self.month, sp, stratShift)
 
     def PrintWorkCardToExcell(self, Employ, workSchedule, Holidays):
 
@@ -195,18 +198,20 @@ class WorkCard():
         sheet['A3'] = self.__departmentName + self.Department
         sheet['G1'] = self.sm.MonthNames[self.month-1]
         sheet['G2'] = self.year
-        sheet['M1'] = Employ[0]
-        sheet['AC1'] = Employ[2]
-        sheet['AI1'] = Employ[1]
+        sheet['M1'] = Employ[0]  # Surname and name of employ
+        sheet['AC1'] = Employ[1]  # Salary
+        sheet['AI1'] = Employ[2]  # Position of employment
 
         colNum = 4
 
         workTime = 0
         nightWork = 0
         vacationLeave = 0  # Urlop wypoczynkowy
+        sickLeave = 0  # zwolnienie lekarskie
 
         for d in range(calendar.monthrange(self.year, self.month)[1]):
 
+            # style cel in date row if day is a holiday
             for i in Holidays:
                 if (date(self.year, self.month, d+1) == i):
                     CellFontColor = Font(
@@ -218,6 +223,7 @@ class WorkCard():
                 else:
                     sheet.cell(row=5, column=colNum, value=d + 1)
 
+            # style cell in date row if day is Sunday
             if (date(self.year, self.month, d+1).weekday() == 6):
                 CellFontColor = Font(color='00FFFFFF', name='Calibri', size=11)
                 CellFillColor = PatternFill("solid", fgColor='00808080')
@@ -227,42 +233,47 @@ class WorkCard():
             else:
                 sheet.cell(row=5, column=colNum, value=d + 1)
 
-            # Ranki
+            # Ranki / morning shift
             if (workSchedule[d] == self.sm.r):
-                sheet.cell(row=6, column=colNum, value=6)
-                sheet.cell(row=7, column=colNum, value=14)
-                sheet.cell(row=8, column=colNum, value=8)
-                sheet.cell(row=23, column=colNum, value=8)
+                # sheet.cell(row=6, column=colNum, value=6)
+                # sheet.cell(row=7, column=colNum, value=14)
+                # sheet.cell(row=8, column=colNum, value=8)
+                # sheet.cell(row=23, column=colNum, value=8)
+                self.__ShiftRow(sheet, 6, 14, colNum)
                 workTime = workTime + 8
-            # Popołudnia
+            # Popołudnia / afternoon shift
             elif (workSchedule[d] == self.sm.p):
-                sheet.cell(row=6, column=colNum, value=14)
-                sheet.cell(row=7, column=colNum, value=22)
-                sheet.cell(row=8, column=colNum, value=8)
-                sheet.cell(row=23, column=colNum, value=8)
+                # sheet.cell(row=6, column=colNum, value=14)
+                # sheet.cell(row=7, column=colNum, value=22)
+                # sheet.cell(row=8, column=colNum, value=8)
+                # sheet.cell(row=23, column=colNum, value=8)
+                self.__ShiftRow(sheet, 14, 22, colNum)
                 workTime = workTime + 8
-            # Nocki
+            # Nocki / night shift
             elif (workSchedule[d] == self.sm.n):
-                sheet.cell(row=6, column=colNum, value=22)
-                sheet.cell(row=7, column=colNum, value=6)
-                sheet.cell(row=8, column=colNum, value=8)
+                self.__ShiftRow(sheet, 22, 6, colNum)
+                # sheet.cell(row=6, column=colNum, value=22)
+                # sheet.cell(row=7, column=colNum, value=6)
+                # sheet.cell(row=8, column=colNum, value=8)
                 sheet.cell(row=12, column=colNum, value=8)
-                sheet.cell(row=23, column=colNum, value=8)
+                # sheet.cell(row=23, column=colNum, value=8)
                 workTime = workTime + 8
                 nightWork = nightWork + 8
             # Ranki Od 7:00
             elif (workSchedule[d] == self.sm.r7):
-                sheet.cell(row=6, column=colNum, value=7)
-                sheet.cell(row=7, column=colNum, value=15)
-                sheet.cell(row=8, column=colNum, value=8)
-                sheet.cell(row=23, column=colNum, value=8)
+                # sheet.cell(row=6, column=colNum, value=7)
+                # sheet.cell(row=7, column=colNum, value=15)
+                # sheet.cell(row=8, column=colNum, value=8)
+                # sheet.cell(row=23, column=colNum, value=8)
+                self.__ShiftRow(sheet, 7, 15, colNum)
                 workTime = workTime + 8
             # Ranki Od 8:00
             elif (workSchedule[d] == self.sm.r8):
-                sheet.cell(row=6, column=colNum, value=8)
-                sheet.cell(row=7, column=colNum, value=16)
-                sheet.cell(row=8, column=colNum, value=8)
-                sheet.cell(row=23, column=colNum, value=8)
+                self.__ShiftRow(sheet, 8, 16, colNum)
+                # sheet.cell(row=6, column=colNum, value=8)
+                # sheet.cell(row=7, column=colNum, value=16)
+                # sheet.cell(row=8, column=colNum, value=8)
+                # sheet.cell(row=23, column=colNum, value=8)
                 workTime = workTime + 8
             # Wolne i wolne wynikające z grafiku
             elif (workSchedule[d] == self.sm.w or workSchedule[d] == self.sm.dt):
@@ -280,17 +291,13 @@ class WorkCard():
             elif (workSchedule[d] == self.sm.l4):
                 sheet.cell(row=18, column=colNum, value=8)
                 sheet.cell(row=23, column=colNum, value=8)
+                sickLeave = sickLeave + 8
 
             colNum = colNum + 1
 
         #######################################################################
 
-        # print('Pracownik:', Employ[0])
-        # print('Czas pracy:', workTime)
-        # print('Czas pracy w godzinach nocnych:', nightWork)
-        # print('Urlop wypoczynkowy:', vacationLeave)
-
-        if (Employ[1] == 'Topiarz'):
+        if (Employ[2] == 'Topiarz'):
             sheet['A8'] = 'Topienie szkła'
             sheet['A9'] = 'Wylewanie szkła opalowego'
         else:
@@ -304,7 +311,10 @@ class WorkCard():
         if (vacationLeave != 0):
             sheet['AI13'] = vacationLeave
 
-        sheet['AI23'] = workTime + vacationLeave
+        if (sickLeave != 0):
+            sheet['AI18'] = sickLeave
+
+        sheet['AI23'] = workTime + vacationLeave + sickLeave
 
         #########################################################################
 
@@ -317,6 +327,11 @@ class WorkCard():
         wb.save(wk_name)
         print('Work card printed')
 
+    def __ShiftRow(self, sheet, shiftfrom, shiftto, colNum):
 
+        sheet.cell(row=6, column=colNum, value=shiftfrom)
+        sheet.cell(row=7, column=colNum, value=shiftto)
+        sheet.cell(row=8, column=colNum, value=8)
+        sheet.cell(row=23, column=colNum, value=8)
 ##########################################################################################################
 ##########################################################################################################
