@@ -30,6 +30,7 @@ begin
             MONTH(h.dataHarmonogramu) = @month and
             YEAR(s.naBrygdazieDo) >= @year and
             Month(s.naBrygdazieDo) >= @month and
+            x.aktualna = 1 and
             j.nazwa = @jednostkaorg and
             b.nazwa <> 'Kadra'
 
@@ -56,6 +57,7 @@ begin
 	h.niestandardowyHarmonogram is not null and
             Year(h.dataHarmonogramu) = @year and
             MONTH(h.dataHarmonogramu) = @month and
+            x.aktualna = 1 and
             j.nazwa = @jednostkaorg
 --         select CONCAT(p.nazwisko, ' ', p.pierwszeImie) as "pracownik", n.nazwaStanowiska, s.stawka, s.godzinowa , h.niedziele, o.przebiegZmian, h.poczatkowaZmiana
 --     from dbo.HarmonogramPracyPracownika h

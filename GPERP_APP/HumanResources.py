@@ -1,5 +1,5 @@
 import datetime
-from datetime import date
+from datetime import timedelta, datetime, date
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font, Color, PatternFill
 import calendar
@@ -35,6 +35,15 @@ class ScheduleModel():
         self.ub = ['Urlop bezpłatny', 'ub']
         self.nn = ['Nieobecność nieusprawiedliwiona', 'nn']
         self.nu = ['Nieobecność usprawiedliwiona', 'nu']
+
+        # list of schedule components
+        self.sc = [
+            self.r,
+            self.p,
+            self.n,
+            self.w
+
+        ]
 
     def SchedulePatern(self, patern):
         '''patern is string like RRRRWPPPPWNNNNWW '''
@@ -72,16 +81,24 @@ class ScheduleModel():
         if (data.month == 12):
             while (data.year < year + 1):
                 monthDay.append(self.WeekDay(data))
-                data = data + datetime.timedelta(days=1)
+                data = data + timedelta(days=1)
         else:
             while (data.month < month + 1):
                 monthDay.append(self.WeekDay(data))
-                data = data + datetime.timedelta(days=1)
+                data = data + timedelta(days=1)
 
         return monthDay
 
     def SetShiftsDiuringMonth(self, year, month, schedulePatern, startShift):
+        '''
+        year: int type
 
+        month: int type
+
+        schedulePatern: string like RRRRWPPPPWNNNNWW
+
+        startShift: position of first day of shedule from pattern, int type
+        '''
         shift = list()
 
         for __d in self.MonthDay(year, month):
@@ -172,30 +189,175 @@ class WorkCard():
 
     def __init__(self, department, year, month):
 
-        self.Department = department
         self.year = year
         self.month = month
 
         self.sm = ScheduleModel()
-        self.__departmentName = 'Wydział: '
+        self.__dep = department
+        self.__departmentName = 'Wydział: ' + department
 
-        self.db = DBConnection()
+        self.__db = DBConnection()
 
-    # def WorkCardTemplate(self):
+        self.__ws = list()
 
-    # def SetWorkSchedule(self, schedulePatern, stratShift, noneWorkingDays):
+        self.__querys = ['exec [GPERP].[dbo].[spDaneDoHarmonogramu] ?, ?, ?',
+                         'exec [GPERP].[dbo].[spDniWolneOdPracyWynikajaceZHarmonogramu] ?, ?, ?',
+                         'exec [GPERP].[dbo].[spNieobecnosciPracownika] ?, ?, ?',
+                         'exec [GPERP].[dbo].[spDniWolneOdPracyISwieta] ?, ?']
 
-    #     sp = self.sm.SchedulePatern(schedulePatern)
+        self.__holidays = self.__db.ShowQuerry(self.__querys[3], [year, month])
 
-    #     return self.sm.SetShiftsDiuringMonth(
-    #         self.year, self.month, sp, stratShift)
+        self.__holidays = self.__holidays['data'].to_list()
+
+        # convert output from querry to date type
+        for i in range(len(self.__holidays)):
+            self.__holidays[i] = datetime.strptime(
+                self.__holidays[i], '%Y-%m-%d').date()
+
+        # Table of all employs from department
+        self.__emp = self.__db.ShowQuerry(
+            self.__querys[0], [self.__dep, self.year, self.month])
+
+    def ShowEmployData(self, empName=''):
+        '''
+        For empty empName return dataframe __emp which contain employs  info about salary and shedule for specific month.
+        If empName contain string or int function will return secific row from dataframe __emp
+        '''
+
+        if (empName == ''):
+            return self.__emp
+
+        if (empName != '' and type(empName) == str):
+            dataForWorkshedule = self.__emp[self.__emp['pracownik'] == empName]
+
+            employ = [dataForWorkshedule['pracownik'].values[0],
+                      dataForWorkshedule['stawka'].values[0],
+                      dataForWorkshedule['nazwaStanowiska'].values[0],
+                      dataForWorkshedule['poczatkowaZmiana'].values[0],
+                      dataForWorkshedule['przebiegZmian'].values[0]]
+
+            return employ
+
+        if (empName != '' and type(empName) == int):
+            dataForWorkshedule = self.__emp.loc[empName]
+            employ = [dataForWorkshedule['pracownik'],
+                      dataForWorkshedule['stawka'],
+                      dataForWorkshedule['nazwaStanowiska'],
+                      dataForWorkshedule['poczatkowaZmiana'],
+                      dataForWorkshedule['przebiegZmian']]
+
+            return employ
+
+    def SetEmploySheduleForWorkCard(self, empName):
+        '''
+        Function return workshedule for one employ with all unpresence during month.
+
+        empName: Surname and First name of employ or number of row in __emp dataframe
+        '''
+
+        # choose one specific employ from emp table
+        employ = self.ShowEmployData(empName)
+        ############################################################
+
+        NoneWorkingDays = self.__db.ShowQuerry(
+            self.__querys[1], [self.year, self.month, employ[0]])
+
+        DaysOff = self.__db.ShowQuerry(
+            self.__querys[2], [self.year, self.month, employ[0]])
+
+        ### Set basic work schedule ###########################
+        sp = self.sm.SchedulePatern(employ[4])
+        ws = self.sm.SetShiftsDiuringMonth(
+            self.year, self.month, sp, employ[3])
+
+        ######################################################
+
+        if (employ[2] != 'Topiarz'):
+
+            for i in range(len(self.__holidays)):
+                ws[self.__holidays[i].day - 1] = self.sm.h
+
+        t = NoneWorkingDays['skrot'].to_list()  # type of none working day
+
+        d = NoneWorkingDays['data'].to_list()  # date of none working day
+
+        for i in range(len(t)):
+
+            if (t[i] == 'h'):
+                ws[datetime.strptime(d[i], '%Y-%m-%d').day - 1] = self.sm.h
+            elif (t[i] == 'dt'):
+                ws[datetime.strptime(d[i], '%Y-%m-%d').day - 1] = self.sm.dt
+
+        dotype = DaysOff['skrot'].to_list()  # type of days of like l4, uw, uo
+        dofrom = DaysOff['nieobecnoscOd'].to_list()  # daysof from date
+        doto = DaysOff['nieobecniscDo'].to_list()  # daysof to date
+        # how meny days unpresens taken
+        doduration = DaysOff['czasNieprzeracowany'].to_list()
+
+        for i in range(len(dotype)):
+            b = 0
+            # dm: date of dayof converted to date time type
+            dm = datetime.strptime(dofrom[i], '%Y-%m-%d')
+
+            if (dotype[i] == 'uw'):
+
+                if (doduration[i] == 8 and ws[dm.day - 1] != self.sm.w and ws[dm.day - 1] != self.sm.dt):
+                    ws[dm.day - 1] = self.sm.uw
+
+                else:
+                    while (dm < datetime.strptime(doto[i], '%Y-%m-%d')):
+
+                        dm = datetime.strptime(
+                            dofrom[i], '%Y-%m-%d') + timedelta(b)
+                        if (ws[dm.day - 1] != self.sm.w and ws[dm.day - 1] != self.sm.dt and ws[dm.day - 1] != self.sm.h):
+                            ws[dm.day - 1] = self.sm.uw
+
+                        b = b + 1
+
+            if (dotype[i] == 'kw'):
+
+                if (doduration[i] == 8 and ws[dm.day - 1] == self.sm.w and ws[dm.day - 1] == self.sm.dt):
+                    ws[dm.day - 1] = self.sm.kw
+
+                else:
+                    while (dm < datetime.strptime(doto[i], '%Y-%m-%d')):
+
+                        dm = datetime.strptime(
+                            dofrom[i], '%Y-%m-%d') + timedelta(b)
+
+                        ws[dm.day - 1] = self.sm.kw
+
+                        b = b + 1
+
+            if (dotype[i] == 'l4'):
+
+                if (doduration[i] == 8 and ws[dm.day - 1] == self.sm.w and ws[dm.day - 1] == self.sm.dt):
+                    ws[dm.day - 1] = self.sm.l4
+
+                else:
+                    while (dm < datetime.strptime(doto[i], '%Y-%m-%d')):
+
+                        dm = datetime.strptime(
+                            dofrom[i], '%Y-%m-%d') + timedelta(b)
+
+                        ws[dm.day - 1] = self.sm.l4
+
+                        b = b + 1
+
+        return ws
+
+    def __SetDayOffInWorkSchedule(self):
+        '''
+        touch my ding dang dong tralala
+        '''
+        print('hahahahah')
 
     def PrintWorkCardToExcell(self, Employ, workSchedule, Holidays):
 
         wb = load_workbook(filename='./Resources/Templates/Karta_pracy.xlsx')
         sheet = wb.active
 
-        sheet['A3'] = self.__departmentName + self.Department
+        sheet['A3'] = self.__departmentName
         sheet['G1'] = self.sm.MonthNames[self.month-1]
         sheet['G2'] = self.year
         sheet['M1'] = Employ[0]  # Surname and name of employ
@@ -208,6 +370,12 @@ class WorkCard():
         nightWork = 0
         vacationLeave = 0  # Urlop wypoczynkowy
         sickLeave = 0  # zwolnienie lekarskie
+
+        if (Employ[2] == 'Topiarz'):
+            sheet['A8'] = 'Topienie szkła'
+            sheet['A9'] = 'Wylewanie szkła opalowego'
+        else:
+            sheet['A8'] = 'Czas przepracowany'
 
         for d in range(calendar.monthrange(self.year, self.month)[1]):
 
@@ -235,45 +403,25 @@ class WorkCard():
 
             # Ranki / morning shift
             if (workSchedule[d] == self.sm.r):
-                # sheet.cell(row=6, column=colNum, value=6)
-                # sheet.cell(row=7, column=colNum, value=14)
-                # sheet.cell(row=8, column=colNum, value=8)
-                # sheet.cell(row=23, column=colNum, value=8)
                 self.__ShiftRow(sheet, 6, 14, colNum)
                 workTime = workTime + 8
             # Popołudnia / afternoon shift
             elif (workSchedule[d] == self.sm.p):
-                # sheet.cell(row=6, column=colNum, value=14)
-                # sheet.cell(row=7, column=colNum, value=22)
-                # sheet.cell(row=8, column=colNum, value=8)
-                # sheet.cell(row=23, column=colNum, value=8)
                 self.__ShiftRow(sheet, 14, 22, colNum)
                 workTime = workTime + 8
             # Nocki / night shift
             elif (workSchedule[d] == self.sm.n):
                 self.__ShiftRow(sheet, 22, 6, colNum)
-                # sheet.cell(row=6, column=colNum, value=22)
-                # sheet.cell(row=7, column=colNum, value=6)
-                # sheet.cell(row=8, column=colNum, value=8)
                 sheet.cell(row=12, column=colNum, value=8)
-                # sheet.cell(row=23, column=colNum, value=8)
                 workTime = workTime + 8
                 nightWork = nightWork + 8
             # Ranki Od 7:00
             elif (workSchedule[d] == self.sm.r7):
-                # sheet.cell(row=6, column=colNum, value=7)
-                # sheet.cell(row=7, column=colNum, value=15)
-                # sheet.cell(row=8, column=colNum, value=8)
-                # sheet.cell(row=23, column=colNum, value=8)
                 self.__ShiftRow(sheet, 7, 15, colNum)
                 workTime = workTime + 8
             # Ranki Od 8:00
             elif (workSchedule[d] == self.sm.r8):
                 self.__ShiftRow(sheet, 8, 16, colNum)
-                # sheet.cell(row=6, column=colNum, value=8)
-                # sheet.cell(row=7, column=colNum, value=16)
-                # sheet.cell(row=8, column=colNum, value=8)
-                # sheet.cell(row=23, column=colNum, value=8)
                 workTime = workTime + 8
             # Wolne i wolne wynikające z grafiku
             elif (workSchedule[d] == self.sm.w or workSchedule[d] == self.sm.dt):
@@ -296,12 +444,6 @@ class WorkCard():
             colNum = colNum + 1
 
         #######################################################################
-
-        if (Employ[2] == 'Topiarz'):
-            sheet['A8'] = 'Topienie szkła'
-            sheet['A9'] = 'Wylewanie szkła opalowego'
-        else:
-            sheet['A8'] = 'Czas przepracowany'
 
         sheet['AI8'] = workTime
 
