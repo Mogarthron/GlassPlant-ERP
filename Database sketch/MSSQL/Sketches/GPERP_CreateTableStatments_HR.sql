@@ -135,4 +135,43 @@ CREATE TABLE DniWolneWynikajaceZHarmonogramu
 
 --);
 
+-- Create a new table called 'PracownicyOutsourcing' in schema 'GPERP'
+-- Drop the table if it already exists
+IF OBJECT_ID('GPERP.PracownicyOutsourcing', 'U') IS NOT NULL
+DROP TABLE GPERP.PracownicyOutsourcing
+GO
+-- Create the table in the specified schema
+CREATE TABLE GPERP.PracownicyOutsourcing
+(
+    id INT NOT NULL IDENTITY(1,1) PRIMARY KEY,
+
+    nazwisko NVARCHAR(50) NOT NULL,
+    pierwszeImie NVARCHAR(50) NOT NULL,
+    premiaRegulaminowa BIT,
+    premiaUznaniowa BIT
+    -- specify more columns here
+
+);
+GO
+
+-- Create a new table called 'PracownicyOutsourcinEtaty' in schema 'GPERP'
+-- Drop the table if it already exists
+IF OBJECT_ID('GPERP.PracownicyOutsourcinEtaty', 'U') IS NOT NULL
+DROP TABLE GPERP.PracownicyOutsourcinEtaty
+GO
+-- Create the table in the specified schema
+CREATE TABLE GPERP.PracownicyOutsourcinEtaty
+(
+    id INT NOT NULL IDENTITY(1,1) PRIMARY KEY,
+
+    dataZatrudnienia DATE NOT NULL,
+    dataZakonczeniaUmowy DATE,
+    stanowisko NVARCHAR(50),
+    stawkaBrutto DECIMAL(7,2),
+    godzinowa BIT
+
+    -- specify more columns here
+);
+GO
+
 --HarmonogramPracyUZ

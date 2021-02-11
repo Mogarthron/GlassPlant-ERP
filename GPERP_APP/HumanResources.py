@@ -28,7 +28,7 @@ class ScheduleModel():
         self.wn = ['Wolna niedziela', 'wn']
         self.dt = ['Dzień wolny wynikający z grafiku', 'dt']
         self.h = ['Święta i dni wolne od pracy', 'h']
-        self.l4 = ['Zwolnienie lekarskie', 'L4']
+        self.l4 = ['Zwolnienie lekarskie', 'l4']
         self.kw = ['Kwarantanna', 'kw']
         self.uw = ['Urlop wypoczynkowy', 'uw']
         self.uo = ['Urlop okolicznościowy', 'uo']
@@ -254,6 +254,7 @@ class WorkCard():
 
         empName: Surname and First name of employ or number of row in __emp dataframe
         '''
+        self.__ws = list()
 
         # choose one specific employ from emp table
         employ = self.ShowEmployData(empName)
@@ -267,7 +268,7 @@ class WorkCard():
 
         ### Set basic work schedule ###########################
         sp = self.sm.SchedulePatern(employ[4])
-        ws = self.sm.SetShiftsDiuringMonth(
+        self.__ws = self.sm.SetShiftsDiuringMonth(
             self.year, self.month, sp, employ[3])
 
         ######################################################
@@ -275,7 +276,7 @@ class WorkCard():
         if (employ[2] != 'Topiarz'):
 
             for i in range(len(self.__holidays)):
-                ws[self.__holidays[i].day - 1] = self.sm.h
+                self.__ws[self.__holidays[i].day - 1] = self.sm.h
 
         t = NoneWorkingDays['skrot'].to_list()  # type of none working day
 
@@ -283,10 +284,12 @@ class WorkCard():
 
         for i in range(len(t)):
 
-            if (t[i] == 'h'):
-                ws[datetime.strptime(d[i], '%Y-%m-%d').day - 1] = self.sm.h
-            elif (t[i] == 'dt'):
-                ws[datetime.strptime(d[i], '%Y-%m-%d').day - 1] = self.sm.dt
+            if (t[i] == self.sm.h[1]):
+                self.__ws[datetime.strptime(
+                    d[i], '%Y-%m-%d').day - 1] = self.sm.h
+            elif (t[i] == self.sm.dt[1]):
+                self.__ws[datetime.strptime(
+                    d[i], '%Y-%m-%d').day - 1] = self.sm.dt
 
         dotype = DaysOff['skrot'].to_list()  # type of days of like l4, uw, uo
         dofrom = DaysOff['nieobecnoscOd'].to_list()  # daysof from date
@@ -295,62 +298,77 @@ class WorkCard():
         doduration = DaysOff['czasNieprzeracowany'].to_list()
 
         for i in range(len(dotype)):
-            b = 0
+
             # dm: date of dayof converted to date time type
             dm = datetime.strptime(dofrom[i], '%Y-%m-%d')
 
-            if (dotype[i] == 'uw'):
+            if (dotype[i] == self.sm.uw[1]):
 
-                if (doduration[i] == 8 and ws[dm.day - 1] != self.sm.w and ws[dm.day - 1] != self.sm.dt):
-                    ws[dm.day - 1] = self.sm.uw
+                self.__DayOffInWorkSchedule(
+                    self.sm.uw, doduration[i], dm, doto[i], dofrom[i])
 
-                else:
-                    while (dm < datetime.strptime(doto[i], '%Y-%m-%d')):
+            if (dotype[i] == self.sm.kw[1]):
 
-                        dm = datetime.strptime(
-                            dofrom[i], '%Y-%m-%d') + timedelta(b)
-                        if (ws[dm.day - 1] != self.sm.w and ws[dm.day - 1] != self.sm.dt and ws[dm.day - 1] != self.sm.h):
-                            ws[dm.day - 1] = self.sm.uw
+                self.__OverridableDaysOff(
+                    self.sm.kw, doduration[i], dm, doto[i], dofrom[i])
 
-                        b = b + 1
+            if (dotype[i] == self.sm.l4[1]):
 
-            if (dotype[i] == 'kw'):
+                self.__OverridableDaysOff(
+                    self.sm.l4, doduration[i], dm, doto[i], dofrom[i])
 
-                if (doduration[i] == 8 and ws[dm.day - 1] == self.sm.w and ws[dm.day - 1] == self.sm.dt):
-                    ws[dm.day - 1] = self.sm.kw
+        return self.__ws
 
-                else:
-                    while (dm < datetime.strptime(doto[i], '%Y-%m-%d')):
-
-                        dm = datetime.strptime(
-                            dofrom[i], '%Y-%m-%d') + timedelta(b)
-
-                        ws[dm.day - 1] = self.sm.kw
-
-                        b = b + 1
-
-            if (dotype[i] == 'l4'):
-
-                if (doduration[i] == 8 and ws[dm.day - 1] == self.sm.w and ws[dm.day - 1] == self.sm.dt):
-                    ws[dm.day - 1] = self.sm.l4
-
-                else:
-                    while (dm < datetime.strptime(doto[i], '%Y-%m-%d')):
-
-                        dm = datetime.strptime(
-                            dofrom[i], '%Y-%m-%d') + timedelta(b)
-
-                        ws[dm.day - 1] = self.sm.l4
-
-                        b = b + 1
-
-        return ws
-
-    def __SetDayOffInWorkSchedule(self):
+    def __DayOffInWorkSchedule(self, sm_element, doduration, dm, doto, dofrom):
         '''
-        touch my ding dang dong tralala
+        void change work shedule positions to upsence elements
+
+        sm_element: element from SheduleModel class 
+
+        doduration: list of int's describe 
+
+        dm:
+
+        doto:
+
+        dofrom:
+
         '''
-        print('hahahahah')
+
+        b = 0
+
+        if (doduration == 8 and self.__ws[dm.day - 1] != self.sm.w and self.__ws[dm.day - 1] != self.sm.dt):
+            self.__ws[dm.day - 1] = sm_element
+
+        else:
+            while (dm < datetime.strptime(doto, '%Y-%m-%d')):
+
+                dm = datetime.strptime(dofrom, '%Y-%m-%d') + timedelta(b)
+
+                if (self.__ws[dm.day - 1] != self.sm.w and self.__ws[dm.day - 1] != self.sm.dt and self.__ws[dm.day - 1] != self.sm.h):
+                    self.__ws[dm.day - 1] = sm_element
+
+                b = b + 1
+
+    def __OverridableDaysOff(self, sm_element, doduration, dm, doto, dofrom):
+        '''
+
+        '''
+
+        b = 0
+
+        if (doduration == 8 and self.__ws[dm.day - 1] == self.sm.w and self.__ws[dm.day - 1] == self.sm.dt):
+            self.__ws[dm.day - 1] = sm_element
+
+        else:
+            while (dm < datetime.strptime(doto, '%Y-%m-%d')):
+
+                dm = datetime.strptime(
+                    dofrom, '%Y-%m-%d') + timedelta(b)
+
+                self.__ws[dm.day - 1] = sm_element
+
+                b = b + 1
 
     def PrintWorkCardToExcell(self, Employ, workSchedule, Holidays):
 

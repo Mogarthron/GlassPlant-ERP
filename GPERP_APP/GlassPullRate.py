@@ -75,10 +75,3 @@ class ReadPullRateFromXlsx:
         columns = ['DATA', 'WG1', 'WG2', 'WG3', 'WE1', 'WE2', 'WE3']
 
         return self.table[columns]
-
-
-# pathToFile = 'Resources/HistoricalData/Wydobycie_Zmianowe.xlsx'
-# pr = ReadPullRateFromXlsx(pathToFile)
-
-
-# print(pr.PullRate().head(29))

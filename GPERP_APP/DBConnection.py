@@ -20,9 +20,3 @@ class DBConnection():
         df = pd.read_sql(query, conn, params=parms)
 
         return df
-
-
-# parms = [2020, 11]
-# query = 'exec [GPERP].[dbo].[spPokazHarmonogram_HarmonogramPracyPracownika] ? , ?'
-# db = DBConnection()
-# print(db.ShowQuerry(query, parms))
