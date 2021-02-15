@@ -121,7 +121,9 @@ CREATE TABLE DniWolneWynikajaceZHarmonogramu
 --	niedziele tinyint,
 --	OCP int foreign key references OrganizacjaCzasuPracy(id),
 --	poczatkowaZmiana tinyint,
---  niestandardowyHarmonogram nvarchar(31)
+--  niestandardowyHarmonogram nvarchar(31),
+--  dniNadmiaroweZZeszlegoMiesiaca tinyint
+
 --);
 
 --create table HarmonogramPracyPracownika(
@@ -131,8 +133,8 @@ CREATE TABLE DniWolneWynikajaceZHarmonogramu
 --	niedziele tinyint,
 --	OCP int foreign key references OrganizacjaCzasuPracy(id),
 --	poczatkowaZmiana tinyint,
---	idywidualnyHarmonogram nvarchar(31) --rrrrrwwpppwrrrrrrww
-
+--	idywidualnyHarmonogram nvarchar(31), --rrrrrwwpppwrrrrrrww
+--  dniNadmiaroweZZeszlegoMiesiaca tinyint
 --);
 
 -- Create a new table called 'PracownicyOutsourcing' in schema 'GPERP'
