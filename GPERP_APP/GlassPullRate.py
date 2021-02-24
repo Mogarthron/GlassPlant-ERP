@@ -11,9 +11,9 @@ class PullRateModel:
         self.WE1 = 0  # Pullrate from electric furance from first shift
         self.WE2 = 0  # Pullrate from electric furance from second shift
         self.WE3 = 0  # Pullrate from electric furance from third shift
-        self.WG1 = 0
-        self.WG2 = 0
-        self.WG3 = 0
+        self.WG1 = 0  # Pullrate from gas furance from first shift
+        self.WG2 = 0  # Pullrate from gas furance from second shift
+        self.WG3 = 0  # Pullrate from gas furance from third shift
 
     def AddShiftPullRateViaWE(self, we1, we2, we3, wgSum):
 

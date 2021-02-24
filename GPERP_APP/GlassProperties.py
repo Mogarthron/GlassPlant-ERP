@@ -14,9 +14,6 @@ class DefaultProp():
         # Dane do obliczenień składu skieł
         ####################################################################################
 
-        s = ['solid phase', 's']
-        g = ['gas phase', 'g']
-
         self.raw_mat = ['Piasek szkl kl. 1',
                         'Soda cieżka',
                         'Azotan sodu', 'Kriolit',
@@ -34,27 +31,27 @@ class DefaultProp():
                         'Węglan baru']
         # informacje nt poszczególnuch tlenków
         # nazwa_tlenku, masa_molowa, stan w szkle, lotność, p-alfa
-        self.ox_data = [['SiO2', 60.06, s, 0.005, 'calc'],  # 0
-                        ['Al2O3', 101.96, s, 0, -35],
-                        ['TiO2', 79.866, s, 0, 'calc'],
+        self.ox_data = [['SiO2', 60.06, 's', 0.005, 'calc'],  # 0
+                        ['Al2O3', 101.96, 's', 0, -35],
+                        ['TiO2', 79.866, 's', 0, 'calc'],
                         # p-alfa dla FeO przeliczyć
-                        ['Fe2O3', 159.69, s, 0, 55],
-                        ['Na2O', 61.99, s, 0.035, 'calc_r'],
-                        ['CO2', 0, g, 1, None],  # 5
-                        ['NxOx', 0, g, 1, None],
-                        ['Kriolit', 209.9, s, 0.5, 480],
-                        ['K2O', 94.19, s, 0.12, 'calc_r'],
-                        ['ZnO', 81.406, s, 0.04, 50],  # 9
-                        ['SOx', 0, g, 1, None],
-                        ['B2O3', 69.64, s, 0.15, 'calc'],
-                        ['H2O', 0, g, 1, None],
-                        ['Sb2O3', 291.52, s, 0, 75],
-                        ['Li2O', 29.88, s, 0.5, 'calc_r'],
-                        ['P2O5', 283.89, s, 0, 140],  # 15
-                        ['CaO', 56.0774, s, 0, 130],
-                        ['MgO', 40.304, s, 0, 60],
-                        ['SrO', 103.619, s, 0, 160],
-                        ['BaO', 153.326, s, 0, 200]]
+                        ['Fe2O3', 159.69, 's', 0, 55],
+                        ['Na2O', 61.99, 's', 0.035, 'calc_r'],
+                        ['CO2', 0, 'g', 0.99, None],  # 5
+                        ['NxOx', 0, 'g', 0.99, None],
+                        ['Kriolit', 209.9, 's', 0.5, 480],
+                        ['K2O', 94.19, 's', 0.12, 'calc_r'],
+                        ['ZnO', 81.406, 's', 0.04, 50],  # 9
+                        ['SOx', 0, 'g', 0.99, None],
+                        ['B2O3', 69.64, 's', 0.15, 'calc'],
+                        ['H2O', 0, 'g', 0.99, None],
+                        ['Sb2O3', 291.52, 's', 0, 75],
+                        ['Li2O', 29.88, 's', 0.5, 'calc_r'],
+                        ['P2O5', 283.89, 's', 0, 140],  # 15
+                        ['CaO', 56.0774, 's', 0, 130],
+                        ['MgO', 40.304, 's', 0, 60],
+                        ['SrO', 103.619, 's', 0, 160],
+                        ['BaO', 153.326, 's', 0.15, 200]]
 
         # skład tlenkowy suroców z analizy jakościowej
         # surowiec, tlenek, sklad_prc
@@ -109,16 +106,30 @@ class RecipeData():
         self.__ox_data = dp.ox_data
         self.__QC_data = dp.QC_data
 
+        self.Glass_Recipe = self.__GlassCompound(glassRecipe)
+        self.Weight_Of_The_Batch = self.Glass_Recipe['ilosc'].sum()
+
         self.__oxide_compound_rawmaterial = list()
         self.__oxide_compound_glass = list()
         self.__oxide_compound_gas = list()
+
+        self.__OxidesInGlassRecipe()
+
+        # self.Oxides_In_Glass_Recipe = self.__OxidesInGlassRecipe()
+        self.__ocr = DataFrame(self.__oxide_compound_rawmaterial,
+                               columns=['Tlenek', 'ilosc_kg'])
+
+        self.Oxides_In_Glass_Recipe = self.__ocr.groupby('Tlenek').sum()
+        self.Oxides_In_Glass_Recipe['mass_prc'] = self.Oxides_In_Glass_Recipe['ilosc_kg'] / \
+            self.Oxides_In_Glass_Recipe['ilosc_kg'].sum() * 100
+
+    def Oxides_In_Melted_Glass(self):
         self.__OxidesInMeltedGlass()
 
-        self.Glass_Recipe = self.__GlassCompound(glassRecipe)
-        self.Weight_Of_The_Batch = self.Glass_Recipe['ilosc'].sum()
-        self.Oxides_In_Glass_Recipe = self.__OxidesInGlassRecipe()
-        self.Oxides_In_Melted_Glass = DataFrame(
+        df = DataFrame(
             self.__oxide_compound_glass, columns=['Tlenek', 'mass_prc'])
+
+        return df
 
     def __GlassCompound(self, recipe):
         '''
@@ -158,13 +169,13 @@ class RecipeData():
         ocr = o_c_r.groupby('Tlenek').sum()
         ocr['mass_prc'] = ocr['ilosc_kg'] / ocr['ilosc_kg'].sum() * 100
 
-        return ocr
+        # return ocr
 
     def __OxidesInMeltedGlass(self):
 
         for i in range(len(self.__oxide_compound_rawmaterial)):
             for j in self.__ox_data:
-                if (j[3] == 1):
+                if (j[3] != 'g'):
                     if (self.__oxide_compound_rawmaterial[i][0] == j[0]):
 
                         a = [self.__oxide_compound_rawmaterial[i][0],

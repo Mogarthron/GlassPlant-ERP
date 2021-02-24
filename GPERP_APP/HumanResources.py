@@ -131,12 +131,12 @@ class WorkSchedule():
 
     def __SetListOfEmployes(self):
 
-        parms = [self.year, self.month]
-        query = 'exec [GPERP].[dbo].[spPokazHarmonogram_HarmonogramPracyPracownika] ? , ?'
+        parms = ['Dział Technologiczny', self.year, self.month]
+        query = 'exec [GPERP].[dbo].[spDaneDoHarmonogramu] ?, ?, ?'
         dbcon = DBConnection()
         listOfEmployes = dbcon.ShowQuerry(query, parms)
 
-        return listOfEmployes
+        return listOfEmployes[['pracownik', 'niedziele', 'przebiegZmian', 'poczatkowaZmiana']]
 
     def SetShiftsDiuringMonth(self, schedulePatern, startShift):
 
@@ -164,15 +164,16 @@ class WorkSchedule():
         __e = self.__SetListOfEmployes()
 
         for i in __e.index:
-            sh[__e['Pracownik'][i]] = self.SetShiftsDiuringMonth(
+            sh[__e['pracownik'][i]] = self.SetShiftsDiuringMonth(
                 self.__sm.SchedulePatern(__e['przebiegZmian'][i]), __e['poczatkowaZmiana'][i])
 
-        sh.to_excel('Harmonogram_Template.xlsx', index=False)
-        print(sh.to_string(index=False))
+        sh.to_excel('./Resources/Output/Harmonogram_Template.xlsx', index=False)
+        # print(sh.to_string(index=False))
 
     def ReadShedule(self):
 
-        df = pd.read_excel('Harmonogram_Template.xlsx', engine='openpyxl')
+        df = pd.read_excel(
+            './Resources/Output/Harmonogram_Template.xlsx', engine='openpyxl')
 
         # sheduleName = self.Department + '_' + \
         #     str(self.year) + '_' + str(self.month) + '.xlsx'
