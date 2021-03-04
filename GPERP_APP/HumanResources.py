@@ -28,6 +28,7 @@ class ScheduleModel():
         self.wn = ['Wolna niedziela', 'wn']
         self.dt = ['Dzień wolny wynikający z grafiku', 'dt']
         self.h = ['Święta i dni wolne od pracy', 'h']
+        ###########################################################
         self.l4 = ['Zwolnienie lekarskie', 'l4']
         self.kw = ['Kwarantanna', 'kw']
         self.uw = ['Urlop wypoczynkowy', 'uw']
@@ -35,15 +36,14 @@ class ScheduleModel():
         self.ub = ['Urlop bezpłatny', 'ub']
         self.nn = ['Nieobecność nieusprawiedliwiona', 'nn']
         self.nu = ['Nieobecność usprawiedliwiona', 'nu']
+        self.ud = ['Urlop na dziecko', 'ud']
+        self.kr = ['Krwiodawstwo', 'kr']
+        self.uz = ['Urlop na żądanie', 'uz']
 
-        # list of schedule components
-        self.sc = [
-            self.r,
-            self.p,
-            self.n,
-            self.w
-
-        ]
+        self.ShiftWorkTime = [self.r, self.p, self.n]
+        self.DefaultUnpresenceForWorkCard = [
+            self.uw, self.uz, self.kr, self.ud, self.uo, self.l4, self.ub, self.nn]
+        self.DaysOff = [self.w, self.dt, self.h, self.wn]
 
     def SchedulePatern(self, patern):
         '''patern is string like RRRRWPPPPWNNNNWW '''
@@ -204,7 +204,8 @@ class WorkCard():
         self.__querys = ['exec [GPERP].[dbo].[spDaneDoHarmonogramu] ?, ?, ?',
                          'exec [GPERP].[dbo].[spDniWolneOdPracyWynikajaceZHarmonogramu] ?, ?, ?',
                          'exec [GPERP].[dbo].[spNieobecnosciPracownika] ?, ?, ?',
-                         'exec [GPERP].[dbo].[spDniWolneOdPracyISwieta] ?, ?']
+                         'exec [GPERP].[dbo].[spDniWolneOdPracyISwieta] ?, ?',
+                         'select p.przestojOd, p.przestojDo from dbo.PrzestojeProdukcji p join dbo.TypPrzestojuProdukcji t on t.id = p.id_TypPrzestoju where YEAR(przestojOd) = ? and Month(przestojOd) = ? and p.id_TypPrzestoju = 1 order by przestojOd']
 
         self.__holidays = self.__db.ShowQuerry(self.__querys[3], [year, month])
 
@@ -249,7 +250,7 @@ class WorkCard():
 
             return employ
 
-    def SetEmploySheduleForWorkCard(self, empName):
+    def SetEmploySheduleForWorkCard(self, Employ):
         '''
         Function return workshedule for one employ with all unpresence during month.
 
@@ -258,23 +259,29 @@ class WorkCard():
         self.__ws = list()
 
         # choose one specific employ from emp table
-        employ = self.ShowEmployData(empName)
+        # employ = self.ShowEmployData(empName)
         ############################################################
 
         NoneWorkingDays = self.__db.ShowQuerry(
-            self.__querys[1], [self.year, self.month, employ[0]])
+            # self.__querys[1], [self.year, self.month, employ[0]])
+            self.__querys[1], [self.year, self.month, Employ[0]])
 
         DaysOff = self.__db.ShowQuerry(
-            self.__querys[2], [self.year, self.month, employ[0]])
-
+            # self.__querys[2], [self.year, self.month, employ[0]])
+            self.__querys[2], [self.year, self.month, Employ[0]])
         ### Set basic work schedule ###########################
-        sp = self.sm.SchedulePatern(employ[4])
+        # sp = self.sm.SchedulePatern(employ[4])
+        # self.__ws = self.sm.SetShiftsDiuringMonth(
+        #     self.year, self.month, sp, employ[3])
+
+        sp = self.sm.SchedulePatern(Employ[4])
         self.__ws = self.sm.SetShiftsDiuringMonth(
-            self.year, self.month, sp, employ[3])
+            self.year, self.month, sp, Employ[3])
 
         ######################################################
 
-        if (employ[2] != 'Topiarz'):
+        # if (employ[2] != 'Topiarz'):
+        if (Employ[2] != 'Topiarz'):
 
             for i in range(len(self.__holidays)):
                 self.__ws[self.__holidays[i].day - 1] = self.sm.h
@@ -292,7 +299,8 @@ class WorkCard():
                 self.__ws[datetime.strptime(
                     d[i], '%Y-%m-%d').day - 1] = self.sm.dt
 
-        dotype = DaysOff['skrot'].to_list()  # type of days of like l4, uw, uo
+        # type of days of like l4, uw, uo, kw
+        dotype = DaysOff['skrot'].to_list()
         dofrom = DaysOff['nieobecnoscOd'].to_list()  # daysof from date
         doto = DaysOff['nieobecniscDo'].to_list()  # daysof to date
         # how meny days unpresens taken
@@ -300,7 +308,7 @@ class WorkCard():
 
         for i in range(len(dotype)):
 
-            # dm: date of dayof converted to date time type
+            # dm: date of dayoff converted to date time type
             dm = datetime.strptime(dofrom[i], '%Y-%m-%d')
 
             if (dotype[i] == self.sm.uw[1]):
@@ -324,9 +332,9 @@ class WorkCard():
         '''
         void change work shedule positions to upsence elements
 
-        sm_element: element from SheduleModel class 
+        sm_element: element from SheduleModel class
 
-        doduration: list of int's describe 
+        doduration: list of int's describe
 
         dm:
 
@@ -358,7 +366,8 @@ class WorkCard():
 
         b = 0
 
-        if (doduration == 8 and self.__ws[dm.day - 1] == self.sm.w and self.__ws[dm.day - 1] == self.sm.dt):
+        # if (doduration == 8 and self.__ws[dm.day - 1] == self.sm.w and self.__ws[dm.day - 1] == self.sm.dt):
+        if (doduration == 8 or self.__ws[dm.day - 1] == self.sm.w or self.__ws[dm.day - 1] == self.sm.dt):
             self.__ws[dm.day - 1] = sm_element
 
         else:
@@ -371,7 +380,48 @@ class WorkCard():
 
                 b = b + 1
 
-    def PrintWorkCardToExcell(self, Employ, workSchedule, Holidays):
+    def OpalSplitting(self, workSchedule):
+        '''
+        workShedule
+
+        Return list of positions of shifts diuring month while was opal splitting
+        '''
+
+        osr = list()  # opal spliting range
+        opalShift = list()
+
+        osp = self.__db.ShowQuerry(
+            self.__querys[4], [self.year, self.month])
+        osp['przestojOd'] = pd.to_datetime(osp['przestojOd'])
+        osp['przestojDo'] = pd.to_datetime(osp['przestojDo'])
+
+        for i in range(osp.shape[0]):
+            osr.append([osp['przestojOd'].iloc[i],
+                        osp['przestojDo'].iloc[i]])
+
+        opalShift = self.__opal_splitting(osr, workSchedule)
+
+        return opalShift
+
+    def HourSummary(self, Employ):
+        '''
+        Employ = specific row from ShowEmployData() 
+        '''
+        ws = self.SetEmploySheduleForWorkCard(Employ[0])
+        os = self.OpalSplitting(ws)
+        df = DataFrame()
+        df['Godziny przepracowane'] = (
+            ws.count(self.sm.r) + ws.count(self.sm.p) + ws.count(self.sm.n))*8
+        df['Godziny nocne'] = ws.count(self.sm.n) * 8
+        df['Wylewanie opalu'] = len(os)
+
+        print(df)
+
+    def __WorkCardToExcell(self, Employ):
+        '''
+        Employ = specific row from ShowEmployData()
+        '''
+        workSchedule = self.SetEmploySheduleForWorkCard(Employ[0])
 
         wb = load_workbook(filename='./Resources/Templates/Karta_pracy.xlsx')
         sheet = wb.active
@@ -390,16 +440,33 @@ class WorkCard():
         vacationLeave = 0  # Urlop wypoczynkowy
         sickLeave = 0  # zwolnienie lekarskie
 
+        osr = list()  # opal spliting range
+        opalShift = list()
+
         if (Employ[2] == 'Topiarz'):
+            osp = self.__db.ShowQuerry(
+                self.__querys[4], [self.year, self.month])
+            osp['przestojOd'] = pd.to_datetime(osp['przestojOd'])
+            osp['przestojDo'] = pd.to_datetime(osp['przestojDo'])
+
+            for i in range(osp.shape[0]):
+                osr.append([osp['przestojOd'].iloc[i],
+                            osp['przestojDo'].iloc[i]])
+
+            # opalShift = self.__opal_splitting(osr, workSchedule)
+            opalShift = self.__opal_splitting(osr, workSchedule)
+
             sheet['A8'] = 'Topienie szkła'
             sheet['A9'] = 'Wylewanie szkła opalowego'
+
         else:
             sheet['A8'] = 'Czas przepracowany'
 
         for d in range(calendar.monthrange(self.year, self.month)[1]):
 
             # style cel in date row if day is a holiday
-            for i in Holidays:
+
+            for i in self.__holidays:
                 if (date(self.year, self.month, d+1) == i):
                     CellFontColor = Font(
                         color='00FFFFFF', name='Calibri', size=11)
@@ -460,10 +527,20 @@ class WorkCard():
                 sheet.cell(row=23, column=colNum, value=8)
                 sickLeave = sickLeave + 8
 
+            if (d in opalShift):
+                sheet.cell(row=9, column=colNum, value=8)
+
             colNum = colNum + 1
 
+        # Zmienic na wszykuwanie czy dany pracownik jest byrgadzistą i jaki ma dodatek
+
+        if (Employ[0] == 'Janiak Tomasz'):
+            sheet['AL6'] = '100 PLN'
         #######################################################################
 
+        ############################################################################
+        ######### Zmienić na funkcje ktróra będzie liczyć wszystko niezależnie #####
+        ######### I wstawiać wartości w odpowiednie pola ###########################
         sheet['AI8'] = workTime
 
         if (nightWork != 0):
@@ -475,18 +552,39 @@ class WorkCard():
         if (sickLeave != 0):
             sheet['AI18'] = sickLeave
 
+        if (len(opalShift) != 0):
+            sheet['AI9'] = len(opalShift)
+
         sheet['AI23'] = workTime + vacationLeave + sickLeave
 
         #########################################################################
 
-        wk_name = './Resources/Output/' + Employ[0] + '.xlsx'
+        wk_name = './Resources/Output/' + \
+            Employ[0] + '_' + str(self.year-2000) + ('0' + str(self.month)
+                                                     if self.month < 10 else str(self.month)) + '.xlsx'
 
         if os.path.isfile(wk_name):
             os.remove(wk_name)
-
-        print('Printing...')
+        ##################################################
+        ########## Usunąć printy #########################
+        ##################################################
+        print(f'Printing {Employ[0]} workcard...')
         wb.save(wk_name)
         print('Work card printed')
+
+    def PrintWorkCardToExcell(self, employ=None):
+        '''
+        employ int or string representing row from ShowEmployData()
+        if employ = None this method print WorkCards for all employs from Department
+
+        '''
+        if (employ == None):
+
+            for i in range(self.ShowEmployData().shape[0]):
+                self.__WorkCardToExcell(self.ShowEmployData(i))
+
+        else:
+            self.__WorkCardToExcell(self.ShowEmployData(employ))
 
     def __ShiftRow(self, sheet, shiftfrom, shiftto, colNum):
 
@@ -494,5 +592,54 @@ class WorkCard():
         sheet.cell(row=7, column=colNum, value=shiftto)
         sheet.cell(row=8, column=colNum, value=8)
         sheet.cell(row=23, column=colNum, value=8)
+
+    def __opl_con(self, shift_label, index_of_ws, osr):
+        '''
+        shift_label = sm.r, sm.p, sm.n
+
+        index_of_ws = current index of work shedule list
+
+        osr = opal splitting range. List of two datetime objects
+
+        If true return index of work shedule
+        '''
+        d = datetime(self.year, self.month, index_of_ws+1)
+
+        r = d + timedelta(hours=6)
+        if (shift_label == self.sm.r and osr[0] <= r and osr[1] > r):
+
+            return True
+
+        p = d + timedelta(hours=14)
+        if (shift_label == self.sm.p and osr[0] <= p and osr[1] > p):
+
+            return True
+
+        n = d + timedelta(hours=22)
+        if (shift_label == self.sm.n and osr[0] <= n and osr[1] > n):
+
+            return True
+
+        return False
+
+    def __opal_splitting(self, osr, ws):
+        '''
+        osr = opal splitting range
+
+        ws = work shedule
+
+        return list with position of shifts
+        '''
+
+        os = list()
+        for j in osr:
+
+            for i in range(len(ws)):
+
+                if(self.__opl_con(ws[i], i, j)):
+
+                    os.append(i)
+
+        return os
 ##########################################################################################################
 ##########################################################################################################
