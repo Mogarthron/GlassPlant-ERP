@@ -5,6 +5,7 @@ from openpyxl.styles import Font, Color, PatternFill
 import calendar
 import pandas as pd
 from pandas import DataFrame, Series
+import numpy as np
 from DBConnection import DBConnection
 import os.path
 
@@ -35,15 +36,28 @@ class ScheduleModel():
         self.uo = ['Urlop okolicznościowy', 'uo']
         self.ub = ['Urlop bezpłatny', 'ub']
         self.nn = ['Nieobecność nieusprawiedliwiona', 'nn']
-        self.nu = ['Nieobecność usprawiedliwiona', 'nu']
+        self.nu = ['Nieobecność usprawiedliwiona', 'un']
         self.ud = ['Urlop na dziecko', 'ud']
         self.kr = ['Krwiodawstwo', 'kr']
         self.uz = ['Urlop na żądanie', 'uz']
 
+        self.AllUnpresence = [[self.l4, 0.8],
+                              [self.kw, 0.8],
+                              [self.uw, 1],
+                              [self.uo, 1],
+                              [self.ub, 0],
+                              [self.nn, 0],
+                              [self.nu, 1],
+                              [self.ud, 0.8],
+                              [self.kr, 1],
+                              [self.uz, 1]]
+
         self.ShiftWorkTime = [self.r, self.p, self.n]
+
+        self.DaysOff = [self.w, self.dt, self.h, self.wn]
+
         self.DefaultUnpresenceForWorkCard = [
             self.uw, self.uz, self.kr, self.ud, self.uo, self.l4, self.ub, self.nn]
-        self.DaysOff = [self.w, self.dt, self.h, self.wn]
 
     def SchedulePatern(self, patern):
         '''patern is string like RRRRWPPPPWNNNNWW '''
@@ -62,7 +76,7 @@ class ScheduleModel():
             elif (i == '7'):
                 _schedulePatern.append(self.r7)
             elif (i == '8'):
-                _schedulePatern.append(self.r7)
+                _schedulePatern.append(self.r8)
 
         return _schedulePatern
 
@@ -223,7 +237,7 @@ class WorkCard():
     def ShowEmployData(self, empName=''):
         '''
         For empty empName return dataframe __emp which contain employs  info about salary and shedule for specific month.
-        If empName contain string or int function will return secific row from dataframe __emp
+        If empName contain string or int function will return specific row from dataframe __emp
         '''
 
         if (empName == ''):
@@ -241,7 +255,7 @@ class WorkCard():
             return employ
 
         if (empName != '' and type(empName) == int):
-            dataForWorkshedule = self.__emp.loc[empName]
+            dataForWorkshedule = self.__emp.iloc[empName]
             employ = [dataForWorkshedule['pracownik'],
                       dataForWorkshedule['stawka'],
                       dataForWorkshedule['nazwaStanowiska'],
@@ -254,7 +268,7 @@ class WorkCard():
         '''
         Function return workshedule for one employ with all unpresence during month.
 
-        empName: Surname and First name of employ or number of row in __emp dataframe
+        Employ: row from showemploydata
         '''
         self.__ws = list()
 
@@ -315,6 +329,11 @@ class WorkCard():
 
                 self.__DayOffInWorkSchedule(
                     self.sm.uw, doduration[i], dm, doto[i], dofrom[i])
+
+            if (dotype[i] == self.sm.nu[1]):
+
+                self.__DayOffInWorkSchedule(
+                    self.sm.nu, doduration[i], dm, doto[i], dofrom[i])
 
             if (dotype[i] == self.sm.kw[1]):
 
@@ -403,25 +422,77 @@ class WorkCard():
 
         return opalShift
 
-    def HourSummary(self, Employ):
-        '''
-        Employ = specific row from ShowEmployData() 
-        '''
-        ws = self.SetEmploySheduleForWorkCard(Employ[0])
-        os = self.OpalSplitting(ws)
-        df = DataFrame()
-        df['Godziny przepracowane'] = (
-            ws.count(self.sm.r) + ws.count(self.sm.p) + ws.count(self.sm.n))*8
-        df['Godziny nocne'] = ws.count(self.sm.n) * 8
-        df['Wylewanie opalu'] = len(os)
+    def HourSummary(self, Employ=None):
 
-        print(df)
+        # list = [name, salary, position]
+        if (type(Employ) is list):
+            print('List')
+            return self.__HourSummaryForOneEmploy_ListEntry(Employ)
+
+        # Create Data frame with hour summary for all employs
+        else:
+            print('Employ = None')
+            return self.__HourSummaryForAllEmploys()
+
+    def __HourSummaryForOneEmploy_ListEntry(self, Employ):
+
+        ws = self.SetEmploySheduleForWorkCard(Employ)
+        os = self.OpalSplitting(ws)
+        hourSum = list()
+
+        for i in self.sm.ShiftWorkTime:
+
+            hourSum.append([i[0], ws.count(i)*8])
+
+        for j in self.sm.AllUnpresence:
+
+            hourSum.append([j[0][0], ws.count(j[0])*8])
+
+        colHeaders = [h[0] for h in hourSum] + \
+            ['Pracownik', 'Stawka', 'Stanowisko']
+        rowData = [[h[1] for h in hourSum] + Employ[:3]]
+
+        _df = DataFrame(rowData, columns=colHeaders)
+        _df['Całkowity czas pracy'] = (
+            _df['Ranek'] + _df['Popołudnie'] + _df['Nocka'])
+
+        _df['Wylewanie Opalu'] = len(os) if Employ[2] == 'Topiarz' else 0
+
+        _df['Dodatek brygadzistowski'] = 100 if Employ[0] == 'Janiak Tomasz' else 0
+
+        _col = [h[0] for h in hourSum] + ['Pracownik']
+        return _df[_col]
+
+    def __HourSummaryForAllEmploys(self):
+
+        empData = self.ShowEmployData()
+        print(empData.shape[0])
+        # for i in range(self.ShowEmployData().shape[0]):
+        #     print(self.SetEmploySheduleForWorkCard(
+        #         self.ShowEmployData().iloc[i]))
+
+        # _columns = list()
+
+        # _list_of_work_shedules = list()
+
+        # for i in self.sm.ShiftWorkTime:
+
+        #     _columns.append(i[0])
+
+        # for j in self.sm.AllUnpresence:
+
+        #     _columns.append(j[0][0])
+
+        # arr = np.zeros((6, len(_columns)))
+        # df = DataFrame(arr, columns=_columns)
+        # print(df)
 
     def __WorkCardToExcell(self, Employ):
         '''
-        Employ = specific row from ShowEmployData()
+        Employ = specific row from ShowEmployData()ks
         '''
-        workSchedule = self.SetEmploySheduleForWorkCard(Employ[0])
+
+        workSchedule = self.SetEmploySheduleForWorkCard(Employ)
 
         wb = load_workbook(filename='./Resources/Templates/Karta_pracy.xlsx')
         sheet = wb.active
@@ -532,7 +603,9 @@ class WorkCard():
 
             colNum = colNum + 1
 
-        # Zmienic na wszykuwanie czy dany pracownik jest byrgadzistą i jaki ma dodatek
+        ###########################################################################
+        ######### Zmienic na wszykuwanie czy dany pracownik #######################
+        ############### jest byrgadzistą i jaki ma dodatek ########################
 
         if (Employ[0] == 'Janiak Tomasz'):
             sheet['AL6'] = '100 PLN'
@@ -544,7 +617,7 @@ class WorkCard():
         sheet['AI8'] = workTime
 
         if (nightWork != 0):
-            sheet['AI12'] = nightWork
+            sheet['AI12'] = workSchedule.count(self.sm.n)*8
 
         if (vacationLeave != 0):
             sheet['AI13'] = vacationLeave

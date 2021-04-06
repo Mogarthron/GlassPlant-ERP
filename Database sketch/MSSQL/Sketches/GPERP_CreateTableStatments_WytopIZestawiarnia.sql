@@ -104,8 +104,8 @@ CREATE TABLE PrzestojeProdukcji
 
 CREATE TABLE WizualizacjaWE
 (
-    id INT PRIMARY KEY IDENTITY(1,1) NOT NULL,
-    dataGodzina DATETIME2 NOT NULL,
+    --id INT PRIMARY KEY IDENTITY(1,1) NOT NULL,
+    dataGodzina DATETIME2 UNIQUE,
     t1A DECIMAL(4,1),
     t1V DECIMAL(4,1),
     t1kW DECIMAL(3,1),
@@ -128,16 +128,37 @@ CREATE TABLE WizualizacjaWE
 
 CREATE TABLE WizualizacjaWG
 (
-    id INT PRIMARY KEY IDENTITY(1,1) NOT NULL,
-    dataGodzina DATETIME2 NOT NULL,
+    --id INT PRIMARY KEY IDENTITY(1,1) NOT NULL,
+    dataGodzina DATETIME2 UNIQUE,
     tempWCzesciTopliwnej SMALLINT,
     tempWCzesciWyrobowej SMALLINT,
     tempLewaKomoraDol SMALLINT,
     tempLewaKomoraGora SMALLINT,
-    tempPrawaKOmoraDol SMALLINT,
+    tempPrawaKomoraDol SMALLINT,
     tempPrawaKomoraGora SMALLINT,
     przeplywGazu TINYINT
 );
 
---Nowy raport topiarza
---CREATE TABLE
+--Zasypy Wanien
+-- Create a new table called 'ZasypyWanien' in schema 'GPERP'
+-- Drop the table if it already exists
+IF OBJECT_ID('GPERP.ZasypyWanien', 'U') IS NOT NULL
+DROP TABLE GPERP.ZasypyWanien
+GO
+-- Create the table in the specified schema
+CREATE TABLE GPERP.ZasypyWanien
+(
+    --id INT NOT NULL PRIMARY KEY IDENTITY(1,1),
+    -- primary key column
+    dataGodzina DATETIME2 UNIQUE,
+    wanna NVARCHAR(20),
+    idReceptury INT FOREIGN KEY REFERENCES Receptury(id),
+    ileZestawow TINYINT NOT NULL,
+    -- brak wydobycia
+    startPrzestoju BIT DEFAULT 0,
+    startWydobycia BIT DEFAULT 1,
+    -- niema wydobycia ale są sypane zestawy
+    zasypWanny BIT DEFAULT 0,
+
+);
+GO
