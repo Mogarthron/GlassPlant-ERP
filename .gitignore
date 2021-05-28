@@ -1,7 +1,6 @@
-Resources/HistoricalData
-Resources/ConnStrings
-Resources/Output
-GPERP_APP/Resources/ConnectionStr
-GPERP_APP/Resources/Output
-GPERP_APP/test.py
-GPERP_APP/test1.py
+Output
+test.py
+test1.py
+run.py
+__pycache__
+venv
