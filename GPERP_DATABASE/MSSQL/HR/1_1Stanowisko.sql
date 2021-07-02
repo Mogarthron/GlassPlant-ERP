@@ -13,4 +13,3 @@ CREATE TABLE Stanowisko
     uszeregowanieStanowiska NVARCHAR(100)
 
 );
-GO

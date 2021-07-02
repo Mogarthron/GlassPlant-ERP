@@ -13,4 +13,3 @@ CREATE TABLE DniWolneWynikajaceZHarmonogramu
     id_TypyNieobecnosci INT FOREIGN KEY REFERENCES TypyNieobecnosci(id),
     data DATE
 );
-GO

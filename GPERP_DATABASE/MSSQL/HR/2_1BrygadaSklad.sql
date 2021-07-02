@@ -13,4 +13,3 @@ CREATE TABLE BrygadaSklad
     naBrygadzieOd Date NOT NULL,
     naBrygadzieDo Date
 );
-GO

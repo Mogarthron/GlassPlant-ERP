@@ -11,4 +11,3 @@ CREATE TABLE CzasPracyWMiesiacu
     data DATE UNIQUE,
     czasPracyjacy TINYINT
 );
-GO

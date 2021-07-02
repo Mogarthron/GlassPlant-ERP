@@ -13,4 +13,3 @@ CREATE TABLE Pracownicy
     zatrudniony BIT DEFAULT 1,
     dataUrodzenia DATE
 );
-GO

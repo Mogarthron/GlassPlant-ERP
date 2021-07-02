@@ -10,4 +10,3 @@ CREATE TABLE DniWolneOdPracyISwieta
     data DATE UNIQUE,
     opis NVARCHAR(100)
 );
-GO

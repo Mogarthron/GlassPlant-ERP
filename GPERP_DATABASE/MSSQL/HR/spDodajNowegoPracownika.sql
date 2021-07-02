@@ -20,6 +20,3 @@ BEGIN
         (@nazwisko, @pierwszeImie, @drugieImie, @dataUrodzenia);
 
 END
-
-GO
-

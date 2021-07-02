@@ -11,4 +11,3 @@ CREATE TABLE Brygada
     id_JednostkaOrganizacyjna int foreign key references JednostkaOrganizacyjna(id) not null,
     nazwa nvarchar(50)
 );
-GO

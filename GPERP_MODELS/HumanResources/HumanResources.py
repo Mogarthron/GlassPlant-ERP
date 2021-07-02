@@ -5,7 +5,7 @@ import calendar
 from pandas import DataFrame, Series, read_excel, to_datetime
 import numpy as np
 
-from GPERP_APP.DBConnection import Connection
+from GPERP_MODELS.DBConnection import Connection
 import os.path
 
 
@@ -535,12 +535,12 @@ class WorkCard:
 
     def __WorkCardToExcell(self, Employ):
         """
-        Employ = specific row from ShowEmployData()ks
+        Employ = specific row from ShowEmployData()
         """
 
         workSchedule = self.SetEmploySheduleForWorkCard(Employ)
 
-        wb = load_workbook(filename="./GPERP_APP/HumanResources/Karta_pracy.xlsx")
+        wb = load_workbook(filename="./GPERP_MODELS/HumanResources/Karta_pracy.xlsx")
         sheet = wb.active
 
         sheet["A3"] = self.__departmentName

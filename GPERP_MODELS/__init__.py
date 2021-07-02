@@ -1,33 +1,42 @@
 from .DBConnection.Connection import DBConnection
+from .HumanResources.Employee import HRQuerys
+from .HumanResources.HumanResources import WorkCard
+from datetime import datetime
 
 
-class APP:
+class Models:
     config = {
-        "Connection_String": "",
+        "Connection_String": None,
         "Human_Resources": False,
         "GlassProp": False,
     }
 
-    def Create_APP(self):
-
-        db = DBConnection(self.config["Connection_String"])
+    def Employees(self):
 
         if self.config["Human_Resources"] == True:
 
-            from .HumanResources.HumanResources import WorkCard
+            HRQuerys.ConStr = self.config["Connection_String"]
+            Emp = HRQuerys()
+            print(Emp.ShowListOfEmpolyees())
 
+    def PrintWorkCards(self):
+        if self.config["Human_Resources"] == True:
             Nazwa_Dzialu = "Dział Technologiczny"
             Rok = input("Rok rozliczenia: ")
             Mc = input("Miesiąc rozliczenia: ")
 
             wk = WorkCard(
-                db,
+                DBConnection(self.config["Connection_String"]),
                 Nazwa_Dzialu,
                 int(Rok),
                 int(Mc),
             )
 
             wk.PrintWorkCardToExcell()
+
+    def Create_BackEnd(self):
+
+        self.Employees()
 
     def Test(self):
         from .HumanResources.CreateWorkCardTemplate import Temp
